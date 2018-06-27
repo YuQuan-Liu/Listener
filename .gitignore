@@ -1,0 +1,9 @@
+# ignore file path
+.idea
+*/.idea
+*.iml
+*/*.iml
+target
+*/target
+
+
