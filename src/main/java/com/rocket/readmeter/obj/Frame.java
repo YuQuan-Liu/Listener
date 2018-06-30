@@ -1,8 +1,11 @@
 package com.rocket.readmeter.obj;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class Frame {
 	
@@ -154,7 +157,8 @@ public class Frame {
 			this.addrstr = this.addrstr+String.format("%02x", addr[i]&0xFF);
 		}
 		this.addrstr = new StringBuilder(this.addrstr).reverse().toString();
-		
+
+		ArrayUtils.reverse(this.addr);  //将addr转正输出
 		this.data = Arrays.copyOfRange(frame, 12, this.frameLength-2);
 		this.afn = frame[12];
 		this.seq = frame[13];
@@ -162,6 +166,16 @@ public class Frame {
 		this.cs = frame[this.frameLength-2];
 	}
 
+	/**
+	 *
+	 * @param dataLength
+	 * @param control
+	 * @param afn
+	 * @param seq
+	 * @param fn
+	 * @param addr  传入的地址为人正常读的  未反作
+     * @param data
+     */
 	public Frame(int dataLength, byte control, byte afn, byte seq,
 			byte fn, byte[] addr, byte[] data) {
 		super();
@@ -196,7 +210,16 @@ public class Frame {
 		bf.put((byte) 0x16);
 		this.frame = bf.array();
 	}
-	
+
+	@Override
+	public String toString() {
+		StringBuilder frame_str = new StringBuilder();
+		for(int i=0;i < frame.length;i++){
+			frame_str.append(Integer.toHexString(frame[i]&0xFF)+" ");
+		}
+		return frame_str.toString();
+	}
+
 	public static void main(String[] args) {
 		byte[] addr = new byte[5];
 		for(int i=0;i < 5;i++){

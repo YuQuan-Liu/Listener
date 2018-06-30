@@ -2,6 +2,8 @@ package com.rocket.readmeter;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.rocket.readmeter.service.ReadService;
+import com.rocket.readmeter.service.ValveService;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
@@ -9,22 +11,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class DataHandler extends IoHandlerAdapter {
+public class ServerDataHandler extends IoHandlerAdapter {
 	
-	private static final Logger logger = LoggerFactory.getLogger(DataHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(ServerDataHandler.class);
 	private static final Gson gson = new Gson();
+	private final ReadService readService = new ReadService();
+	private final ValveService valveService = new ValveService();
 
 	@Override
 	public void exceptionCaught(IoSession session,Throwable cause){
-		session.close(true);
-		logger.error("MINA错误", cause);
+		session.closeNow();
+		logger.error("MINA error", cause);
 	}
 	
 	@Override
 	public void sessionIdle(IoSession session, IdleStatus status) {
 		
 		if(session.getIdleCount(status) == 1){
-			session.close(true);
+			session.closeNow();
 		}
 		
 	}
@@ -36,13 +40,18 @@ public class DataHandler extends IoHandlerAdapter {
 		try {
 			JsonObject jo = gson.fromJson(action,JsonObject.class);
 			String function = jo.getAsJsonPrimitive("function").getAsString();
-			int pid = jo.getAsJsonPrimitive("pid").getAsInt();
-			if((function.equalsIgnoreCase("read") || function.equalsIgnoreCase("valve")) && pid > 0){
-				session.write("{\"function\":\""+function+"\",\"pid\":\""+pid+"\",\"result\":\"success\"}");
-				//将指令添加到处理的线程池
-//				DealAction.addAction(function, pid);
+			int readlogid = jo.getAsJsonPrimitive("pid").getAsInt();
+			if((function.equalsIgnoreCase("read") || function.equalsIgnoreCase("valve")) && readlogid > 0){
+				session.write("{\"function\":\""+function+"\",\"pid\":\""+readlogid+"\",\"result\":\"success\"}");
+				switch (function){
+					case "read":
+						readService.read(readlogid);
+						break;
+					case "valve":
+						break;
+				}
 			}else{
-				session.write("{\"function\":\""+function+"\",\"pid\":\""+pid+"\",\"result\":\"fail\"}");
+				session.write("{\"function\":\""+function+"\",\"pid\":\""+readlogid+"\",\"result\":\"fail\"}");
 			}
 		} catch (Exception e) {
 			logger.error("message receive error : " + action,e);

@@ -29,7 +29,7 @@ public class Test {
         SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
 
         MeterMapper meterMapper = session.getMapper(MeterMapper.class);
-        int metercnt = meterMapper.getMeterCountByGID(160);
+        int metercnt = meterMapper.getMeterCountByGID(11);
         System.out.println(metercnt);
 
         session.commit();

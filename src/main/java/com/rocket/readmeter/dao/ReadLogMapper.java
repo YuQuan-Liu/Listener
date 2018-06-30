@@ -19,6 +19,10 @@ public interface ReadLogMapper {
             "where pid >= #{pid} and adminid = #{adminid} and ip = #{ip} ")
     public List<Readlog> getAllNeighborReadlog(int adminid, int pid, String ip);
 
+    @Select("select pid,adminid,objectId,readType,remote,readObject,ip,readStatus,failReason,startTime,completeTime,settle,result from ReadLog " +
+            "where pid >= #{pid} and adminid = #{adminid} ")
+    public List<Readlog> getAllNeighborReadlog(int adminid, int pid);
+
     @Update("update readlog " +
             "set ReadStatus = 100,FailReason = #{reason},CompleteTime = now(),Result = #{result} " +
             "where PID = #{readlogid}")
