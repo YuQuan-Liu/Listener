@@ -34,7 +34,7 @@ public class ReadService {
      * @return
      */
     public Readlog getReadLogByID(int pid){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
 
         Readlog readlog = null;
         try {
@@ -53,7 +53,7 @@ public class ReadService {
      * @return
      */
     public GPRS getGPRSbyMID(int mid){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
 
         GPRS gprs = null;
         try{
@@ -71,7 +71,7 @@ public class ReadService {
      * @return
      */
     public List<GPRS> getGPRSsbyNID(int nid){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
 
         List<GPRS> gprsList = null;
         try{
@@ -89,7 +89,7 @@ public class ReadService {
      * @return
      */
     public Meter getMeterbyID(int mid){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
 
         Meter meter = null;
         try{
@@ -108,7 +108,7 @@ public class ReadService {
      * @return
      */
     public List<Readlog> getAllNeighborReadlog(int adminid, int min_readlogid){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
 
         List<Readlog> readlogs = null;
         try{
@@ -126,7 +126,7 @@ public class ReadService {
      * @return
      */
     public List<Collector> getCollectorsByGID(int gid){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
 
         List<Collector> collectors = null;
         try{
@@ -146,7 +146,7 @@ public class ReadService {
      * @param result
      */
     public void updateReadLog(int readlogid,boolean finished, String reason, String result){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
         try {
             ReadLogMapper readLogMapper = session.getMapper(ReadLogMapper.class);
             readLogMapper.updateReadLog(readlogid,finished,reason,result);

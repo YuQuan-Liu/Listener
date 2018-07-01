@@ -1,3 +1,5 @@
+import com.rocket.listener.dao.ListenerLogMapper;
+import com.rocket.listener.obj.ListenerLog;
 import com.rocket.readmeter.dao.GPRSMapper;
 import com.rocket.readmeter.dao.MeterMapper;
 import com.rocket.readmeter.obj.GPRS;
@@ -14,7 +16,7 @@ public class Test {
 
     @org.junit.Test
     public void testGPRSMapper(){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
 
         GPRSMapper gprsMapper = session.getMapper(GPRSMapper.class);
         List<GPRS> gprss = gprsMapper.getGPRSsbyNID(136);
@@ -26,7 +28,7 @@ public class Test {
 
     @org.junit.Test
     public void testMeterMapper(){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
 
         MeterMapper meterMapper = session.getMapper(MeterMapper.class);
         int metercnt = meterMapper.getMeterCountByGID(11);
@@ -35,4 +37,16 @@ public class Test {
         session.commit();
         session.close();
     }
+
+    @org.junit.Test
+    public void testListenerLogMapper(){
+        SqlSession session = MybatisUtils.getSqlSessionFactoryListener().openSession();
+
+        ListenerLogMapper listenerLogMapper = session.getMapper(ListenerLogMapper.class);
+        listenerLogMapper.insertLog(new ListenerLog("5555", "1", "3", "GPRS","remote"));
+
+        session.commit();
+        session.close();
+    }
+
 }

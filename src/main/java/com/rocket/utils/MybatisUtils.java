@@ -12,19 +12,24 @@ import java.io.InputStream;
  */
 public class MybatisUtils {
 
-    private static SqlSessionFactory sqlSessionFactory;
+    private static SqlSessionFactory sqlSessionFactoryRemote;
+    private static SqlSessionFactory sqlSessionFactoryListener;
     static {
         String resource = "mybatis-config.xml";
-        InputStream inputStream;
         try {
-            inputStream = Resources.getResourceAsStream(resource);
-            sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+            sqlSessionFactoryRemote = new SqlSessionFactoryBuilder().build(Resources.getResourceAsStream(resource),"remotemeter");
+            sqlSessionFactoryListener = new SqlSessionFactoryBuilder().build(Resources.getResourceAsStream(resource),"listener");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static SqlSessionFactory getSqlSessionFactory(){
-        return sqlSessionFactory;
+    public static SqlSessionFactory getSqlSessionFactoryListener(){
+        return sqlSessionFactoryListener;
     }
+
+    public static SqlSessionFactory getSqlSessionFactoryRemote(){
+        return sqlSessionFactoryRemote;
+    }
+
 }

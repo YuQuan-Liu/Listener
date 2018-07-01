@@ -11,7 +11,7 @@ import org.apache.ibatis.session.SqlSession;
 public class ValveService {
 
     public Valvelog getValveLogByID(int pid){
-        SqlSession session = MybatisUtils.getSqlSessionFactory().openSession();
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
         Valvelog valvelog = null;
         try{
             ValveLogMapper valveLogMapper = session.getMapper(ValveLogMapper.class);

@@ -92,10 +92,12 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <targetPath>${project.build.directory}</targetPath>
-                <includes>
-                    <include>log4j2.xml</include>
-                    <include>rocket.properties</include>
-                </includes>
+            </resource>
+            <!-- 将配置文件也copy到classes下一份  否则在IDE中运行会报找不到配置文件 -->
+            <!-- 打包发布时  注释下面代码 -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <targetPath>${project.build.directory}/classes</targetPath>
             </resource>
         </resources>
 

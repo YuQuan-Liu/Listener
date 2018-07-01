@@ -22,6 +22,11 @@ public class Listener {
     public static void main(String[] args) {
 		logger.info("start");
 
+		if(args.length != 2){
+			System.exit(-1);
+			logger.error("args error please use : cmd ip port ");
+		}
+
 		String ip = args[0];
 		String port = args[1];
 
