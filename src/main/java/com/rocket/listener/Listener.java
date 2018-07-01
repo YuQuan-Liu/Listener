@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class ListenerServer {
+public class Listener {
 	
-	private static final Logger logger = LoggerFactory.getLogger(ListenerServer.class);
+	private static final Logger logger = LoggerFactory.getLogger(Listener.class);
 	public static NioSocketAcceptor acceptor = null;  //TCP Server
 
 	public static void main(String[] args){

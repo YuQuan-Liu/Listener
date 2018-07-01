@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.rocket.listener.obj.ListenerLog;
 import com.rocket.listener.service.ListenerLogService;
 import com.rocket.readmeter.obj.Frame;
+import com.rocket.utils.StringUtil;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
@@ -78,6 +79,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
     private void fromPC(IoSession session, Frame frame) {
         String frame_str = frame.toString();
         IoSession send = null;
+        byte[] gprs_addr = StringUtil.string2Byte(frame.getAddrstr());
 
         switch(frame.getAfn()){
             case 0x02:  //链路接口
@@ -86,15 +88,15 @@ public class ListenerDataHandler extends IoHandlerAdapter {
                         IoSession oldsession = pc.get(frame.getAddrstr());
                         if(oldsession != null && (boolean)oldsession.getAttribute("online")){
                             //这个GPRS已经在抄表了  新来的  你等会在来吧
-                            session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x02,frame.getAddr(),new byte[0]));
+                            session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x02,gprs_addr,new byte[0]));
                             listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "1", "3", "WAIT",session.getRemoteAddress().toString()));
                         }else{  //确认
                             if(gprs.containsKey(frame.getAddrstr()) && (boolean)gprs.get(frame.getAddrstr()).getAttribute("online")){  //集中器在线
                                 pc.put(frame.getAddrstr(), session);
-                                session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x01,frame.getAddr(),new byte[0]));
+                                session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x01,gprs_addr,new byte[0]));
                                 listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "1", "3", "GPRS",session.getRemoteAddress().toString()));
                             }else{  //GPRS不在线
-                                session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x02,frame.getAddr(),new byte[0]));
+                                session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x02,gprs_addr,new byte[0]));
                                 listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "1", "3", "NOGPRS",session.getRemoteAddress().toString()));
                             }
                         }
@@ -117,7 +119,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
                     send.write(frame);
                     listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "1", "3", frame_str,session.getRemoteAddress().toString()));
                 }else{  //GPRS 不在线
-                    session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x02,frame.getAddr(),new byte[0]));
+                    session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x02,gprs_addr,new byte[0]));
                 }
                 break;
         }
@@ -131,6 +133,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
     private void fromGPRS(IoSession session, Frame frame) {
         String frame_str = frame.toString();
         IoSession send = null;
+        byte[] gprs_addr = StringUtil.string2Byte(frame.getAddrstr());
 
         switch(frame.getAfn()){
             case 0x02:  //链路接口
@@ -138,7 +141,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
                     case 0x01:  //登录  集中器没有实现
                         gprs.put(frame.getAddrstr(), session);
                         //确认
-                        session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x01,frame.getAddr(),new byte[0]));
+                        session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x01,gprs_addr,new byte[0]));
                         listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "0", "1", "",session.getRemoteAddress().toString()));
                         break;
                     case 0x02:  //退出  集中器没有实现
@@ -146,7 +149,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
                         break;
                     case 0x03:  //心跳
                         gprs.put(frame.getAddrstr(), session);
-                        session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR | (frame.getSeq()&0x0F)),(byte)0x01,frame.getAddr(),new byte[0]));
+                        session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR | (frame.getSeq()&0x0F)),(byte)0x01,gprs_addr,new byte[0]));
                         listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "0", "4", "",session.getRemoteAddress().toString()));
                         break;
                 }
@@ -169,7 +172,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
                 byte slave_seq_ = (byte) (frame.getSeq() & 0x0F);
                 Frame data_ack = new Frame(0, (byte)(Frame.ZERO),
                         Frame.AFN_YES, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR | slave_seq_),
-                        (byte)0x01, frame.getAddr(), new byte[0]);
+                        (byte)0x01, gprs_addr, new byte[0]);
                 session.write(data_ack);
 
                 send = pc.get(frame.getAddrstr());

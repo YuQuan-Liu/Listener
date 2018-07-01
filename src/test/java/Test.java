@@ -1,7 +1,9 @@
 import com.rocket.listener.dao.ListenerLogMapper;
 import com.rocket.listener.obj.ListenerLog;
+import com.rocket.readmeter.ClientDataHandler;
 import com.rocket.readmeter.dao.GPRSMapper;
 import com.rocket.readmeter.dao.MeterMapper;
+import com.rocket.readmeter.obj.Frame;
 import com.rocket.readmeter.obj.GPRS;
 import com.rocket.utils.MybatisUtils;
 import org.apache.ibatis.session.SqlSession;
@@ -49,4 +51,11 @@ public class Test {
         session.close();
     }
 
+    @org.junit.Test
+    public void testFrame(){
+        GPRS gprs = new GPRS();
+        gprs.setGprsaddr("5700000422");
+        Frame syn = new ClientDataHandler().synFrame(gprs,1);
+        System.out.println(syn);
+    }
 }

@@ -1,5 +1,6 @@
 package com.rocket.readmeter.obj;
 
+import com.rocket.utils.StringUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.nio.ByteBuffer;
@@ -109,14 +110,6 @@ public class Frame {
 		this.fn = fn;
 	}
 
-	public byte[] getAddr() {
-		return addr;
-	}
-
-	public void setAddr(byte[] addr) {
-		this.addr = addr;
-	}
-
 	public String getAddrstr() {
 		return addrstr;
 	}
@@ -154,9 +147,8 @@ public class Frame {
 		this.addr = Arrays.copyOfRange(frame, 7, 12);
 		for(int i = 0;i < 5;i++){
 //			this.addrstr = this.addrstr+Integer.toHexString(addr[i]&0xFF);
-			this.addrstr = this.addrstr+String.format("%02x", addr[i]&0xFF);
+			this.addrstr = this.addrstr+String.format("%02x", addr[4-i]&0xFF).toUpperCase();
 		}
-		this.addrstr = new StringBuilder(this.addrstr).reverse().toString();
 
 		ArrayUtils.reverse(this.addr);  //将addr转正输出
 		this.data = Arrays.copyOfRange(frame, 12, this.frameLength-2);
@@ -215,7 +207,7 @@ public class Frame {
 	public String toString() {
 		StringBuilder frame_str = new StringBuilder();
 		for(int i=0;i < frame.length;i++){
-			frame_str.append(Integer.toHexString(frame[i]&0xFF)+" ");
+			frame_str.append(String.format("%02x", frame[i]&0xFF).toUpperCase() + " ");
 		}
 		return frame_str.toString();
 	}
@@ -225,12 +217,11 @@ public class Frame {
 		for(int i=0;i < 5;i++){
 			addr[i] = (byte) i;
 		}
+		System.out.println(StringUtil.byteArrayToHexStr(addr,addr.length));
+		ArrayUtils.reverse(addr);
+		System.out.println(StringUtil.byteArrayToHexStr(addr,addr.length));
 		Frame f = new Frame(0, (byte)0x10, (byte)0x00, (byte)0x60, (byte)0x01, addr, new byte[0]);
-		byte[] ff = f.getFrame();
-		
-		for(int i=0;i < ff.length;i++){
-			System.out.println(Integer.toHexString(ff[i]&0xFF));
-		}
+		System.out.println(f);
 	}
 	
 	public static boolean checkFrame(byte[] frame){
