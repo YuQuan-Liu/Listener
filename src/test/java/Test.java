@@ -6,6 +6,7 @@ import com.rocket.readmeter.dao.MeterMapper;
 import com.rocket.readmeter.obj.Frame;
 import com.rocket.readmeter.obj.GPRS;
 import com.rocket.utils.MybatisUtils;
+import com.rocket.utils.StringUtil;
 import org.apache.ibatis.session.SqlSession;
 
 import java.util.List;
@@ -57,5 +58,12 @@ public class Test {
         gprs.setGprsaddr("5700000422");
         Frame syn = new ClientDataHandler().synFrame(gprs,1);
         System.out.println(syn);
+
+        //GPRS 心跳帧
+        byte[] gprs_addr = StringUtil.string2Byte(gprs.getGprsaddr());
+        Frame login = new Frame(0, (byte)0xC9,
+                Frame.AFN_LOGIN, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),
+                (byte)0x03, gprs_addr, new byte[0]);
+        System.out.println(login);
     }
 }

@@ -30,6 +30,9 @@ public class ListenerDataHandler extends IoHandlerAdapter {
     public void sessionIdle(IoSession session, IdleStatus status) {
 
         if(session.getIdleCount(status) == 1){
+            String addr = (String) session.getAttribute("addr");
+            String remote = session.getRemoteAddress().toString();
+            logger.info("addr: "+ addr+";remote: "+remote+";idle!!!");
             session.closeNow();
         }
 
@@ -45,6 +48,9 @@ public class ListenerDataHandler extends IoHandlerAdapter {
         if(session.getAttribute("online") == null){
             //son of bitch
         }else{
+            String addr = (String) session.getAttribute("addr");
+            String remote = session.getRemoteAddress().toString();
+            logger.info("addr: "+ addr+";remote: "+remote+";closed!!!");
             session.setAttribute("online", false);
         }
 
