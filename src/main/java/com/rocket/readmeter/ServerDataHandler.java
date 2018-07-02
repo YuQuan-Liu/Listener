@@ -28,6 +28,9 @@ public class ServerDataHandler extends IoHandlerAdapter {
 	public void sessionIdle(IoSession session, IdleStatus status) {
 		
 		if(session.getIdleCount(status) == 1){
+			String remote = session.getRemoteAddress().toString();
+			String readlogid = session.getAttribute("readlogid").toString();
+			logger.info("readlogid: "+ readlogid+";remote: "+remote+";idle!!!");
 			session.closeNow();
 		}
 		
@@ -41,6 +44,7 @@ public class ServerDataHandler extends IoHandlerAdapter {
 			JsonObject jo = gson.fromJson(action,JsonObject.class);
 			String function = jo.getAsJsonPrimitive("function").getAsString();
 			int readlogid = jo.getAsJsonPrimitive("pid").getAsInt();
+			session.setAttribute("readlogid",readlogid);
 			if((function.equalsIgnoreCase("read") || function.equalsIgnoreCase("valve")) && readlogid > 0){
 				session.write("{\"function\":\""+function+"\",\"pid\":\""+readlogid+"\",\"result\":\"success\"}");
 				switch (function){
@@ -65,6 +69,8 @@ public class ServerDataHandler extends IoHandlerAdapter {
 	
 	@Override
 	public void sessionClosed(IoSession session) throws Exception{
-		
+		String remote = session.getRemoteAddress().toString();
+		String readlogid = session.getAttribute("readlogid").toString();
+		logger.info("readlogid: "+ readlogid+";remote: "+remote+";closed!!!");
 	}
 }

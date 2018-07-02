@@ -20,6 +20,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Rocket on 2018/6/28.
@@ -237,13 +239,15 @@ public class ReadService {
                 client.setAttribute("collectors",new ArrayList<Collector>());  //海大表时  所有采集器
                 //抄小区时
                 client.setAttribute("gprs_cnt",1);  //当前所抄小区 GPRS个数
-                client.setAttribute("gprs_finish",new HashMap<String,String>());  //当前所抄小区 已完成的GPRS及结果
+                client.setAttribute("gprs_finish",new ConcurrentHashMap<String,String>());  //当前所抄小区 已完成的GPRS及结果
                 //剩下的就去clientDataHandler中处理了！
             }else{
                 //建立连接失败！ save to db
-                updateReadLog(readlogid,true,"连接监听异常","正常0;异常1");
+                updateReadLog(readlogid,true,"连接监听失败","连接监听失败");
+                logger.error("read single meter error: connent to listener error : readlogid: "+readlogid);
             }
         } catch (Exception e) {
+            updateReadLog(readlogid,true,"连接监听失败","连接监听失败");
             logger.error("read single meter error : readlogid: "+readlogid,e);
         }
 
@@ -263,8 +267,9 @@ public class ReadService {
             logger.error("no gprs in neighbor ! readlogid :"+readlogid);
             updateReadLog(readlogid,true,"NO GPRS in neighbor","NO GPRS in neighbor");
         }else{
+            ConcurrentHashMap<String,String> gprs_result = new ConcurrentHashMap<>();  //当前所抄小区 已完成的GPRS及结果
             for (GPRS gprs : gprsList) {
-                readSingleGPRS(gprs, gprs_cnt, readlogid);
+                readSingleGPRS(gprs, gprs_cnt, gprs_result, readlogid);
             }
         }
 
@@ -274,10 +279,22 @@ public class ReadService {
      * 抄单个GPRS
      * @param gprs
      * @param gprs_cnt  小区下GPRS的个数
+     * @param gprs_result
      * @param readlogid
      */
-    private  void readSingleGPRS(GPRS gprs, int gprs_cnt, int readlogid){
-
+    private void readSingleGPRS(GPRS gprs, int gprs_cnt, ConcurrentHashMap<String,String> gprs_result, int readlogid){
+        //抄海大表
+        List<Collector> collectors = new ArrayList<>();
+        if(gprs.getGprsprotocol() == 3){  //EG表  atom集中器
+            //获取GPRS下所有采集器  并判断数量
+            collectors = getCollectorsByGID(gprs.getPid());
+            if(collectors.size() == 0){
+                logger.error("no collectors in gprs ! readlogid :"+readlogid);
+                updateReadLog(readlogid,true,"NO collectors in GPRS","NO collectors in GPRS");
+                return;
+            }
+        }
+        boolean error = false;
         try {
             ConnectFuture future = Listener.connector.connect(new InetSocketAddress(gprs.getIp(),gprs.getPort()));
             future.awaitUninterruptibly();
@@ -296,23 +313,39 @@ public class ReadService {
                 client.setAttribute("action","read");  //抄表read  开关阀valve
                 client.setAttribute("frames",new ArrayList<Frame>());  //保存所有的抄表数据帧
                 //抄海大表
-                List<Collector> collectors = new ArrayList<>();
-                if(gprs.getGprsprotocol() == 3){  //EG表  atom集中器
-                    collectors = getCollectorsByGID(gprs.getPid());
-                }
                 client.setAttribute("collectors",collectors);  //海大表时  所有采集器
+                client.setAttribute("collectors_finish",new HashMap<String,String>());  //存储每个采集器的抄表结果
+                client.setAttribute("collector_index",0);  //需要抄的采集器在collectors中的index
                 //抄小区时
                 client.setAttribute("gprs_cnt",gprs_cnt);  //当前所抄小区 GPRS个数
-                client.setAttribute("gprs_finish",new HashMap<String,String>());  //当前所抄小区 已完成的GPRS及结果
+                client.setAttribute("gprs_finish",gprs_result);  //当前所抄小区 已完成的GPRS及结果
                 //剩下的就去clientDataHandler中处理了！
             }else{
-                //建立连接失败！ save to db
-                updateReadLog(readlogid,true,"连接监听异常","正常0;异常1");
+                //建立连接失败！ save gprs result
+                error = true;
+                gprs_result.put(gprs.getGprsaddr(),"连接监听失败");
+                logger.error("read single gprs error: connent to listener error : readlogid: "+readlogid);
             }
         } catch (Exception e) {
+            error = true;
+            gprs_result.put(gprs.getGprsaddr(),"连接监听失败");
             logger.error("read gprs error : readlogid: "+readlogid,e);
         }
 
+        if(error){  //连接监听的时候出错了
+            if(gprs_cnt == 1){  //只有一个GPRS 更新DB
+                updateReadLog(readlogid,true,"connent to listener error","connent to listener error");
+            }else{
+                if(gprs_cnt == gprs_result.size()){  //所有的GPRS都抄完了  保存结果
+                    //将结果拼装到一起
+                    String result = "";
+                    for(Map.Entry<String,String> entry : gprs_result.entrySet()){
+                        result = result +"<br/>"+ entry.getKey()+": "+entry.getValue();
+                    }
+                    updateReadLog(readlogid,true,result,result);
+                }
+            }
+        }
     }
 
     /**
