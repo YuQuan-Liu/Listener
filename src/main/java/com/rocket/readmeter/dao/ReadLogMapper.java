@@ -1,6 +1,7 @@
 package com.rocket.readmeter.dao;
 
 import com.rocket.readmeter.obj.Readlog;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -20,9 +21,10 @@ public interface ReadLogMapper {
     public List<Readlog> getAllNeighborReadlog(int adminid, int pid);
 
     @Update("update readlog " +
-            "set ReadStatus = 100,FailReason = #{reason},CompleteTime = now(),Result = #{result} " +
+            "set ReadStatus = 100,FailReason = #{failreason},CompleteTime = now(),Result = #{result} " +
             "where PID = #{readlogid}")
-    public void updateReadLog(int readlogid, boolean finished,
-                                     String reason, String result);
+    public int updateReadLog(@Param("readlogid") int readlogid,
+                             @Param("failreason") String failreason,
+                             @Param("result") String result);
 
 }

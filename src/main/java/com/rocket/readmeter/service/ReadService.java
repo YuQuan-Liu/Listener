@@ -151,7 +151,7 @@ public class ReadService {
         SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
         try {
             ReadLogMapper readLogMapper = session.getMapper(ReadLogMapper.class);
-            readLogMapper.updateReadLog(readlogid,finished,reason,result);
+            readLogMapper.updateReadLog(readlogid,reason,result);
             session.commit();
         } finally {
             session.close();
@@ -163,8 +163,10 @@ public class ReadService {
      * @param readlogid
      */
     public void read(int readlogid){
+        logger.info("readservice start read ; readlogid:"+readlogid);
         Readlog readlog = getReadLogByID(readlogid);
         if(readlog.getReadStatus() >= 100){
+            logger.info("readlog status = 100 ; readlogid:"+readlogid);
             return;
         }
         switch (readlog.getReadObject()) {
@@ -183,6 +185,7 @@ public class ReadService {
             default:
                 break;
         }
+        logger.info("readservice end read ; readlogid:"+readlogid);
     }
 
     /**

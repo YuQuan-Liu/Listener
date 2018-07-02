@@ -3,6 +3,7 @@ import com.rocket.listener.obj.ListenerLog;
 import com.rocket.readmeter.ClientDataHandler;
 import com.rocket.readmeter.dao.GPRSMapper;
 import com.rocket.readmeter.dao.MeterMapper;
+import com.rocket.readmeter.dao.ReadLogMapper;
 import com.rocket.readmeter.obj.Frame;
 import com.rocket.readmeter.obj.GPRS;
 import com.rocket.utils.MybatisUtils;
@@ -48,6 +49,16 @@ public class Test {
         ListenerLogMapper listenerLogMapper = session.getMapper(ListenerLogMapper.class);
         listenerLogMapper.insertLog(new ListenerLog("5555", "1", "3", "GPRS","remote"));
 
+        session.commit();
+        session.close();
+    }
+
+    @org.junit.Test
+    public void testReadLogMapper(){
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
+
+        ReadLogMapper readLogMapper = session.getMapper(ReadLogMapper.class);
+        readLogMapper.updateReadLog(17737, "good","good");
         session.commit();
         session.close();
     }

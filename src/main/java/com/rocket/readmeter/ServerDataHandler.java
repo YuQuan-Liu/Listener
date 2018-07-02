@@ -10,6 +10,9 @@ import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 public class ServerDataHandler extends IoHandlerAdapter {
 	
@@ -17,6 +20,7 @@ public class ServerDataHandler extends IoHandlerAdapter {
 	private static final Gson gson = new Gson();
 	private final ReadService readService = new ReadService();
 	private final ValveService valveService = new ValveService();
+	private final static ExecutorService threadpool = Executors.newFixedThreadPool(5);
 
 	@Override
 	public void exceptionCaught(IoSession session,Throwable cause){
@@ -47,13 +51,21 @@ public class ServerDataHandler extends IoHandlerAdapter {
 			session.setAttribute("readlogid",readlogid);
 			if((function.equalsIgnoreCase("read") || function.equalsIgnoreCase("valve")) && readlogid > 0){
 				session.write("{\"function\":\""+function+"\",\"pid\":\""+readlogid+"\",\"result\":\"success\"}");
-				switch (function){
-					case "read":
-						readService.read(readlogid);
-						break;
-					case "valve":
-						break;
-				}
+
+				//在线程池中执行抄表任务
+				threadpool.execute(new Runnable() {
+					@Override
+					public void run() {
+						switch (function){
+							case "read":
+								readService.read(readlogid);
+								break;
+							case "valve":
+								break;
+						}
+					}
+				});
+
 			}else{
 				session.write("{\"function\":\""+function+"\",\"pid\":\""+readlogid+"\",\"result\":\"fail\"}");
 			}
