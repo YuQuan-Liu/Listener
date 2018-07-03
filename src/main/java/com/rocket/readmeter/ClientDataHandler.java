@@ -182,6 +182,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 						}else{  //下一个采集器
 							session.setAttribute("collector_index",collector_index);
 							session.setAttribute("state","readack");
+							frames.clear();  //清空frames
 							session.write(readFrame(session));
 						}
 						break;
@@ -245,9 +246,66 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		int error = 0;
 		HashMap<String,Integer> saveresult = new HashMap<>();
 		List<Frame> frames = (List<Frame>)session.getAttribute("frames");
+		GPRS gprs = (GPRS)session.getAttribute("gprs");
+		int readlogid = (int)session.getAttribute("readlogid");
+		int collector_index = (int)session.getAttribute("collector_index");
+		List<Collector> collectors = (List<Collector>)session.getAttribute("collectors");
 
+		Collector collector = collectors.get(collector_index);
+		HashMap<String,MeterRead> meterreads = new HashMap<>();
 
+		for(Frame frame : frames){
+			byte[] frame_bytes = frame.getFrame();
+			int metercnt = (frame.getDataLength()-12)/3;
 
+			int meterread = -1;
+			int meteraddr = 1;
+			byte meterstatus = 1;
+			String remark = "";
+
+			if(frame_bytes[17] == (byte)0xFF){  //采集器超时~~~~返回指令0xFF
+				error = collector.getMeterNums();
+				break;
+			}else{
+				for(int i = 0;i < metercnt;i++){
+					meteraddr = frame_bytes[18+3*i]&0xFF;
+					meterread = frame_bytes[18+3*i+1]&0xFF;
+					meterread = meterread << 8;
+					meterread = meterread|(frame_bytes[18+3*i+2]&0xFF);
+					String numstr = Integer.toHexString(meterread);
+
+					if(numstr.equals("aaaa")){
+						meterread = -1;
+						meterstatus = 2;
+						remark = "aaaa";
+						error++;
+					}else{
+						if(numstr.equals("bbbb")){
+							meterread = -1;
+							meterstatus = 3;
+							remark = "bbbb";
+							error++;
+						}else{
+							meterstatus = 1;
+							remark = "";
+							try {
+								meterread = Integer.valueOf(numstr);
+								good++;
+							} catch (NumberFormatException e) {
+								error++;
+								meterread = -1;
+								remark = e.getMessage();
+								logger.error("numstr to meterread error ! meterread: "+numstr,e);
+							}
+						}
+					}
+
+					meterreads.put(meteraddr+"",new MeterRead(readlogid,gprs.getPid(),collector.getColAddr()+"",meteraddr+"",meterstatus,meterread,1,remark));
+				}
+			}
+		}
+
+		readService.saveMeterReadsEG(meterreads);
 
 		saveresult.put("good",good);
 		saveresult.put("error",error);
@@ -334,13 +392,18 @@ public class ClientDataHandler extends IoHandlerAdapter {
 				//表读数
 				bf.put(meterdata, i*14+4+1+3+8, 4);
 				String readhexstr = Integer.toHexString(bf.getInt(0));  //get the int   turn the int to hex string
-				meterread = Integer.parseInt(readhexstr)/100;  //turn the readhexstr to the real read
+				try {
+					meterread = Integer.parseInt(readhexstr)/100;  //turn the readhexstr to the real read
+				} catch (NumberFormatException e) {
+					meterread = -1;
+					logger.error("numstr to meterread error ! meterread: "+readhexstr,e);
+				}
 				bf.flip();
 				meterreads.put(meteraddr,new MeterRead(readlogid,gprs.getPid(),meteraddr,meterstatus,meterread,valvestatus,remark));
 			}
 		}
 
-		readService.saveMeterReads(meterreads);
+		readService.saveMeterReads188(meterreads);
 
 		saveresult.put("good",good);
 		saveresult.put("error",error);

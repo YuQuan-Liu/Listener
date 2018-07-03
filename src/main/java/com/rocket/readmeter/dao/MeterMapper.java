@@ -38,4 +38,15 @@ public interface MeterMapper {
             "where gprsid = #{gprsid} and MeterAddr = #{meteraddr} and valid = '1' ")
     public void updateMeterNoRead(MeterRead meterRead);
 
+
+    @Select("update Meter " +
+            "set meterstate = #{meterstatus},readdata = #{meterread},valvestate = #{valvestatus},readtime = now() " +
+            "where gprsid = #{gprsid} and CollectorAddr = #{collectoraddr} and MeterAddr = #{meteraddr} and valid = '1' ")
+    public void updateMeterEG(MeterRead meterRead);
+
+    @Select("update Meter " +
+            "set meterstate = #{meterstatus},valvestate = #{valvestatus},readtime = now() " +
+            "where gprsid = #{gprsid} and CollectorAddr = #{collectoraddr} and MeterAddr = #{meteraddr} and valid = '1' ")
+    public void updateMeterEGNoRead(MeterRead meterRead);
+
 }

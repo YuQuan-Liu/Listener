@@ -20,5 +20,11 @@ public interface ReadMeterLogMapper {
             "where gprsid = #{gprsid} and MeterAddr = #{meteraddr} and valid = '1' ")
     public int insertReadMeterLog(MeterRead meterRead);
 
+    @Insert("insert into ReadMeterLog " +
+            "(MeterId,ActionType,ActionResult,ReadLogid,remark) " +
+            "select pid,#{meterstatus},#{meterread},#{readlogid},#{remark} from Meter " +
+            "where gprsid = #{gprsid} and CollectorAddr = #{collectoraddr} and MeterAddr = #{meteraddr} and valid = '1' ")
+    public int insertReadMeterLogEG(MeterRead meterRead);
+
 
 }

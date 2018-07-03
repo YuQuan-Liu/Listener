@@ -7,6 +7,7 @@ package com.rocket.readmeter.obj;
 public class MeterRead {
 
     private String meteraddr;
+    private String collectoraddr;
     private int readlogid;
     private int gprsid;
     private int meterstatus;
@@ -24,12 +25,31 @@ public class MeterRead {
         this.remark = remark;
     }
 
+    public MeterRead(int readlogid, int gprsid, String collectoraddr, String meteraddr, int meterstatus, int meterread, int valvestatus, String remark) {
+        this.meteraddr = meteraddr;
+        this.collectoraddr = collectoraddr;
+        this.readlogid = readlogid;
+        this.gprsid = gprsid;
+        this.meterstatus = meterstatus;
+        this.meterread = meterread;
+        this.valvestatus = valvestatus;
+        this.remark = remark;
+    }
+
     public String getMeteraddr() {
         return meteraddr;
     }
 
     public void setMeteraddr(String meteraddr) {
         this.meteraddr = meteraddr;
+    }
+
+    public String getCollectoraddr() {
+        return collectoraddr;
+    }
+
+    public void setCollectoraddr(String collectoraddr) {
+        this.collectoraddr = collectoraddr;
     }
 
     public int getReadlogid() {

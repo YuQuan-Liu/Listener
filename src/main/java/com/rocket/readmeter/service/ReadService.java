@@ -384,10 +384,10 @@ public class ReadService {
     }
 
     /**
-     * 依次保存抄上来的水表的地址
+     * 依次保存抄上来的水表的地址  188
      * @param meterreads
      */
-    public void saveMeterReads(HashMap<String, MeterRead> meterreads) {
+    public void saveMeterReads188(HashMap<String, MeterRead> meterreads) {
         //依次保存表的数据
         SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
         try {
@@ -396,8 +396,40 @@ public class ReadService {
 
             for(Map.Entry<String,MeterRead> entry : meterreads.entrySet()){
                 MeterRead meterread = entry.getValue();
-                meterMapper.updateMeter(meterread);
+                if(meterread.getMeterread() == -1){
+                    meterMapper.updateMeterNoRead(meterread);
+                }else{
+                    meterMapper.updateMeter(meterread);
+                }
                 readMeterLogMapper.insertReadMeterLog(meterread);
+            }
+
+            session.commit();
+        } finally {
+            session.close();
+        }
+
+    }
+
+    /**
+     * 依次保存抄上来的水表的地址  EG
+     * @param meterreads
+     */
+    public void saveMeterReadsEG(HashMap<String, MeterRead> meterreads) {
+        //依次保存表的数据
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
+        try {
+            MeterMapper meterMapper = session.getMapper(MeterMapper.class);
+            ReadMeterLogMapper readMeterLogMapper = session.getMapper(ReadMeterLogMapper.class);
+
+            for(Map.Entry<String,MeterRead> entry : meterreads.entrySet()){
+                MeterRead meterread = entry.getValue();
+                if(meterread.getMeterread() == -1){
+                    meterMapper.updateMeterEGNoRead(meterread);
+                }else{
+                    meterMapper.updateMeterEG(meterread);
+                }
+                readMeterLogMapper.insertReadMeterLogEG(meterread);
             }
 
             session.commit();
