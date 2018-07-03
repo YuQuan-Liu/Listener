@@ -197,13 +197,13 @@ public class ReadService {
         Meter meter = getMeterbyID(mid);
 
         switch (gprs.getGprsprotocol()) {
-            case 1:  //EG   XX
-            case 4:  //D10 下的表 XX
+            case GPRS.GPRSPROTOCOL_EG:  //EG   XX
+            case GPRS.GPRSPROTOCOL_D10:  //D10 下的表 XX
                 logger.error("EG & D10 not support ! readlogid : "+readlogid);
                 break;
-            case 2:  //188
-            case 3:  //EG表  atom集中器
-            case 5:  //188 v2
+            case GPRS.GPRSPROTOCOL_188:  //188
+            case GPRS.GPRSPROTOCOL_EGATOM:  //EG表  atom集中器
+            case GPRS.GPRSPROTOCOL_188V2:  //188 v2
                 readSingleMeter_(meter, gprs, readlogid);
                 break;
         }
@@ -303,7 +303,7 @@ public class ReadService {
     private void readSingleGPRS(GPRS gprs, int gprs_cnt, ConcurrentHashMap<String,String> gprs_result, int readlogid){
         //抄海大表
         List<Collector> collectors = new ArrayList<>();
-        if(gprs.getGprsprotocol() == 3){  //EG表  atom集中器
+        if(gprs.getGprsprotocol() == GPRS.GPRSPROTOCOL_EGATOM){  //EG表  atom集中器
             //获取GPRS下所有采集器  并判断数量
             collectors = getCollectorsByGID(gprs.getPid());
             if(collectors.size() == 0){

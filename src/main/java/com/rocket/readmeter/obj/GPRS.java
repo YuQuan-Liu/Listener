@@ -2,6 +2,13 @@ package com.rocket.readmeter.obj;
 
 public class GPRS {
 
+	//集中器使用协议
+	public static final int GPRSPROTOCOL_EG = 1;
+	public static final int GPRSPROTOCOL_188 = 2;
+	public static final int GPRSPROTOCOL_EGATOM = 3;
+	public static final int GPRSPROTOCOL_D10 = 4;
+	public static final int GPRSPROTOCOL_188V2 = 5;
+
 	private Integer pid;
 	private int neighborid;
 	private String gprsaddr;

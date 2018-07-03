@@ -52,11 +52,11 @@ public class ClientDataHandler extends IoHandlerAdapter {
 				break;
 			case "all":
 				switch (gprs.getGprsprotocol()){
-					case 3:  //EGatom
+					case GPRS.GPRSPROTOCOL_EGATOM:  //EGatom
 						data_timeout_cnt = 12;
 						break;
-					case 2:  //188
-					case 5:  //188v2
+					case GPRS.GPRSPROTOCOL_188:  //188
+					case GPRS.GPRSPROTOCOL_188V2:  //188v2
 						data_timeout_cnt = 3;
 						break;
 				}
@@ -163,7 +163,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 			if(seq_sign == 0x60 || seq_sign == 0x20){
 				String result = "";  //保存数据的结果
 				switch (gprs.getGprsprotocol()){
-					case 3:  //EGatom
+					case GPRS.GPRSPROTOCOL_EGATOM:  //EGatom
 						//判断是不是最后一个采集器 如果是最后一个采集器结束
 						result = saveReadData(session);
 						int collector_index = (int)session.getAttribute("collector_index");
@@ -185,12 +185,12 @@ public class ClientDataHandler extends IoHandlerAdapter {
 							session.write(readFrame(session));
 						}
 						break;
-					case 2:  //188
+					case GPRS.GPRSPROTOCOL_188:  //188
 						result = saveReadData(session);
 						gprs_finish.put(gprs.getGprsaddr(),result);
 						session.closeNow();
 						break;
-					case 5:  //188v2
+					case GPRS.GPRSPROTOCOL_188V2:  //188v2
 						//判断当前帧序号与总帧数的关系  如果当前帧序号==总帧数 保存
 						byte[] frame_bytes = frame.getFrame();
 						int frame_all = (frame_bytes[15] & 0xFF) | ((frame_bytes[16] & 0xFF) << 8);
@@ -223,11 +223,11 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		saveresult.put("error",0);
 		//根据不同的协议保存表的数据
 		switch (gprs.getGprsprotocol()){
-			case 3:  //EGatom
+			case GPRS.GPRSPROTOCOL_EGATOM:  //EGatom
 				saveresult = saveReadDataEG(session);
 				break;
-			case 2:  //188
-			case 5:  //188v2
+			case GPRS.GPRSPROTOCOL_188:  //188
+			case GPRS.GPRSPROTOCOL_188V2:  //188v2
 				saveresult = saveReadData188(session);
 				break;
 		}
@@ -414,12 +414,12 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		if(frame.getFn() == 0x01){
             //online 集中器在线  EGatom&188同步序列号 / 188v2发送抄表指令
             switch (gprs.getGprsprotocol()){
-                case 2:  //188
-                case 3:  //EGatom
+                case GPRS.GPRSPROTOCOL_188:  //188
+                case GPRS.GPRSPROTOCOL_EGATOM:  //EGatom
 					session.setAttribute("state","synack");
                     session.write(synFrame(gprs,seq));
                     break;
-                case 5:  //188v2
+                case GPRS.GPRSPROTOCOL_188V2:  //188v2
 					session.setAttribute("state","readack");
 					session.write(readFrame(session));
                     break;
@@ -468,13 +468,13 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		//抄表
 		if(action == "read"){
 			switch (gprs.getGprsprotocol()){
-				case 2:  //188
+				case GPRS.GPRSPROTOCOL_188:  //188
 					frame = readFrame188(session);
 					break;
-				case 3:  //EG表
+				case GPRS.GPRSPROTOCOL_EGATOM:  //EG表
 					frame = readFrameEG(session);
 					break;
-				case 5:  //188 v2
+				case GPRS.GPRSPROTOCOL_188V2:  //188 v2
 					frame = readFrame188v2(session);
 					break;
 			}
@@ -482,7 +482,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		//开关阀
 		if(action == "valve"){
 			switch (gprs.getGprsprotocol()){
-				case 2:  //188
+				case GPRS.GPRSPROTOCOL_188:  //188
 //					frame = controlFrame188(action, gprs, meter, seq);
 					break;
 			}
