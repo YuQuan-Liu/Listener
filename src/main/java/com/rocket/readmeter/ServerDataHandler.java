@@ -56,6 +56,7 @@ public class ServerDataHandler extends IoHandlerAdapter {
 				threadpool.execute(new Runnable() {
 					@Override
 					public void run() {
+						logger.info("thread pool start runing readlogid: "+readlogid);
 						switch (function){
 							case "read":
 								readService.read(readlogid);
@@ -63,6 +64,7 @@ public class ServerDataHandler extends IoHandlerAdapter {
 							case "valve":
 								break;
 						}
+						logger.info("thread pool end runing readlogid: "+readlogid);
 					}
 				});
 

@@ -26,8 +26,12 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 	@Override
 	public void exceptionCaught(IoSession session,Throwable cause){
-		session.closeNow();
+
+		ConcurrentHashMap<String,String> gprs_finish = (ConcurrentHashMap<String, String>) session.getAttribute("gprs_finish");
+		GPRS gprs = (GPRS)session.getAttribute("gprs");
+		gprs_finish.put(gprs.getGprsaddr(),"抄表异常");
 		logger.error("MINA error", cause);
+		session.closeNow();
 	}
 	
 	@Override
@@ -35,7 +39,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 		int idle_cnt = session.getIdleCount(status);
 		GPRS gprs = (GPRS)session.getAttribute("gprs");
-		int seq = (int)session.getAttribute("seq");
+		byte seq = (byte)session.getAttribute("seq");
 		int syn_seq_retry = (int)session.getAttribute("syn_seq_retry");
 		int read_retry = (int)session.getAttribute("read_retry");
 		ConcurrentHashMap<String,String> gprs_finish = (ConcurrentHashMap<String, String>) session.getAttribute("gprs_finish");
@@ -125,12 +129,6 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 	@Override
 	public void sessionOpened(IoSession session) throws Exception{
-		//登陆监听服务器！
-		Meter meter = (Meter)session.getAttribute("meter");
-		GPRS gprs = (GPRS)session.getAttribute("gprs");
-
-		session.setAttribute("state","loginack");
-		session.write(loginFrame(gprs));
 
 	}
 
@@ -164,34 +162,49 @@ public class ClientDataHandler extends IoHandlerAdapter {
 			//判断是不是单独帧 或 最后一帧  将结果保存到数据库
 			int seq_sign = frame.getSeq() & 0x60;
 			if(seq_sign == 0x60 || seq_sign == 0x40){
-				//save the frames to DB
-				String result = saveReadData(session);
-				if(gprs.getGprsprotocol() == 2){  //EGatom
-
-					//判断是不是最后一个采集器 如果是最后一个采集器结束
-					int collector_index = (int)session.getAttribute("collector_index");
-					List<Collector> collectors = (List<Collector>)session.getAttribute("collectors");
-					HashMap<String,String> collectors_finish = (HashMap<String, String>) session.getAttribute("collectors_finish");
-					collectors_finish.put(collectors.get(collector_index).getColAddr()+"",result);
-					collector_index = collector_index + 1; //下一个采集器 index
-					if(collector_index == collectors.size()){  //这个是最后一个采集器  结束
-						//将采集器的所有的结果拼接起来
-						String collector_results = "";
-						for(Map.Entry<String,String> entry : collectors_finish.entrySet()){
-							collector_results = collector_results +"&nbsp;&nbsp;<br/>"+ entry.getKey()+": "+entry.getValue();
+				String result = "";  //保存数据的结果
+				switch (gprs.getGprsprotocol()){
+					case 2:  //EGatom
+						//判断是不是最后一个采集器 如果是最后一个采集器结束
+						result = saveReadData(session);
+						int collector_index = (int)session.getAttribute("collector_index");
+						List<Collector> collectors = (List<Collector>)session.getAttribute("collectors");
+						HashMap<String,String> collectors_finish = (HashMap<String, String>) session.getAttribute("collectors_finish");
+						collectors_finish.put(collectors.get(collector_index).getColAddr()+"",result);
+						collector_index = collector_index + 1; //下一个采集器 index
+						if(collector_index == collectors.size()){  //这个是最后一个采集器  结束
+							//将采集器的所有的结果拼接起来
+							String collector_results = "";
+							for(Map.Entry<String,String> entry : collectors_finish.entrySet()){
+								collector_results = collector_results +"&nbsp;&nbsp;<br/>"+ entry.getKey()+": "+entry.getValue();
+							}
+							gprs_finish.put(gprs.getGprsaddr(),collector_results);
+							session.closeNow();
+						}else{  //下一个采集器
+							session.setAttribute("collector_index",collector_index);
+							session.setAttribute("state","readack");
+							session.write(readFrame(session));
 						}
-						gprs_finish.put(gprs.getGprsaddr(),collector_results);
+						break;
+					case 3:  //188
+						result = saveReadData(session);
+						gprs_finish.put(gprs.getGprsaddr(),result);
 						session.closeNow();
-					}else{  //下一个采集器
-						session.setAttribute("collector_index",collector_index);
-						session.setAttribute("state","readack");
-						session.write(readFrame(session));
-					}
-				}else{
-					//188 & 188v2 finished
-					gprs_finish.put(gprs.getGprsaddr(),result);
-					session.closeNow();
+						break;
+					case 5:  //188v2
+						//判断当前帧序号与总帧数的关系  如果当前帧序号==总帧数 保存
+						byte[] frame_bytes = frame.getFrame();
+						int frame_all = (frame_bytes[15] & 0xFF) | ((frame_bytes[16] & 0xFF) << 8);
+						int frame_count = (frame_bytes[17] & 0xFF) | ((frame_bytes[18] & 0xFF) << 8);
+						logger.info("188v2  frame_all: "+frame_all+"; frame_count: "+frame_count);
+						if(frame_all == frame_count){
+							result = saveReadData(session);
+							gprs_finish.put(gprs.getGprsaddr(),result);
+							session.closeNow();
+						}
+						break;
 				}
+
 			}
 		}
 
@@ -312,19 +325,6 @@ public class ClientDataHandler extends IoHandlerAdapter {
 				Frame.AFN_READMETER, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR | seq),
 				(byte)0x05, gprs_addr, framedata);
 		return syn;
-	}
-
-	/**
-	 * 登陆监听服务器帧
-	 * @param gprs
-	 * @return
-     */
-	public Frame loginFrame(GPRS gprs){
-		byte[] gprs_addr = StringUtil.string2Byte(gprs.getGprsaddr());
-		Frame login = new Frame(0, (byte)(Frame.ZERO | Frame.PRM_MASTER |Frame.PRM_M_LINE),
-				Frame.AFN_LOGIN, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),
-				(byte)0x01, gprs_addr, new byte[0]);
-		return login;
 	}
 
 	/**

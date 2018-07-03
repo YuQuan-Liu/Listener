@@ -244,17 +244,35 @@ public class ReadService {
                 client.setAttribute("gprs_cnt",1);  //当前所抄小区 GPRS个数
                 client.setAttribute("gprs_finish",new ConcurrentHashMap<String,String>());  //当前所抄小区 已完成的GPRS及结果
                 //剩下的就去clientDataHandler中处理了！
+
+                client.setAttribute("state","loginack");
+                client.write(loginFrame(gprs));
+
             }else{
                 //建立连接失败！ save to db
                 updateReadLog(readlogid,true,"连接监听失败","连接监听失败");
-                logger.error("read single meter error: connent to listener error : readlogid: "+readlogid);
+                logger.error("read single meter error: connent to listener error : readlogid: "+readlogid+"; ip: "+gprs.getIp()+"; port: "+gprs.getPort());
             }
         } catch (Exception e) {
             updateReadLog(readlogid,true,"连接监听失败","连接监听失败");
-            logger.error("read single meter error : readlogid: "+readlogid,e);
+            logger.error("read single meter error : readlogid: "+readlogid+"; ip: "+gprs.getIp()+"; port: "+gprs.getPort(),e);
         }
 
     }
+
+    /**
+     * 登陆监听服务器帧
+     * @param gprs
+     * @return
+     */
+    public Frame loginFrame(GPRS gprs){
+        byte[] gprs_addr = StringUtil.string2Byte(gprs.getGprsaddr());
+        Frame login = new Frame(0, (byte)(Frame.ZERO | Frame.PRM_MASTER |Frame.PRM_M_LINE),
+                Frame.AFN_LOGIN, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),
+                (byte)0x01, gprs_addr, new byte[0]);
+        return login;
+    }
+
 
     /**
      * 抄单个小区
@@ -323,6 +341,9 @@ public class ReadService {
                 client.setAttribute("gprs_cnt",gprs_cnt);  //当前所抄小区 GPRS个数
                 client.setAttribute("gprs_finish",gprs_result);  //当前所抄小区 已完成的GPRS及结果
                 //剩下的就去clientDataHandler中处理了！
+
+                client.setAttribute("state","loginack");
+                client.write(loginFrame(gprs));
             }else{
                 //建立连接失败！ save gprs result
                 error = true;
