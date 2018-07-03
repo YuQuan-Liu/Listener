@@ -1,9 +1,6 @@
 package com.rocket.readmeter;
 
-import com.rocket.readmeter.obj.Collector;
-import com.rocket.readmeter.obj.Frame;
-import com.rocket.readmeter.obj.GPRS;
-import com.rocket.readmeter.obj.Meter;
+import com.rocket.readmeter.obj.*;
 import com.rocket.readmeter.service.ReadService;
 import com.rocket.utils.StringUtil;
 import org.apache.mina.core.filterchain.IoFilterChain;
@@ -13,6 +10,8 @@ import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,10 +52,10 @@ public class ClientDataHandler extends IoHandlerAdapter {
 				break;
 			case "all":
 				switch (gprs.getGprsprotocol()){
-					case 2:  //EGatom
+					case 3:  //EGatom
 						data_timeout_cnt = 12;
 						break;
-					case 3:  //188
+					case 2:  //188
 					case 5:  //188v2
 						data_timeout_cnt = 3;
 						break;
@@ -161,10 +160,10 @@ public class ClientDataHandler extends IoHandlerAdapter {
 			frames.add(frame);
 			//判断是不是单独帧 或 最后一帧  将结果保存到数据库
 			int seq_sign = frame.getSeq() & 0x60;
-			if(seq_sign == 0x60 || seq_sign == 0x40){
+			if(seq_sign == 0x60 || seq_sign == 0x20){
 				String result = "";  //保存数据的结果
 				switch (gprs.getGprsprotocol()){
-					case 2:  //EGatom
+					case 3:  //EGatom
 						//判断是不是最后一个采集器 如果是最后一个采集器结束
 						result = saveReadData(session);
 						int collector_index = (int)session.getAttribute("collector_index");
@@ -186,7 +185,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 							session.write(readFrame(session));
 						}
 						break;
-					case 3:  //188
+					case 2:  //188
 						result = saveReadData(session);
 						gprs_finish.put(gprs.getGprsaddr(),result);
 						session.closeNow();
@@ -217,14 +216,135 @@ public class ClientDataHandler extends IoHandlerAdapter {
      */
 	private String saveReadData(IoSession session){
 		logger.info("save read data to db !");
-		List<Frame> frames = (List<Frame>)session.getAttribute("frames");
+		GPRS gprs = (GPRS) session.getAttribute("gprs");
+
+		HashMap<String,Integer> saveresult = new HashMap<>();
+		saveresult.put("good",0);
+		saveresult.put("error",0);
+		//根据不同的协议保存表的数据
+		switch (gprs.getGprsprotocol()){
+			case 3:  //EGatom
+				saveresult = saveReadDataEG(session);
+				break;
+			case 2:  //188
+			case 5:  //188v2
+				saveresult = saveReadData188(session);
+				break;
+		}
+
+		return "正常："+saveresult.get("good")+"; 异常："+saveresult.get("error");
+	}
+
+	/**
+	 * 保存EG协议的表到DB
+	 * @param session
+	 * @return
+     */
+	public HashMap<String,Integer> saveReadDataEG(IoSession session){
 		int good = 0;
 		int error = 0;
-		// TODO
-		for (Frame f : frames){
-			logger.info("frames: "+f.toString());
+		HashMap<String,Integer> saveresult = new HashMap<>();
+		List<Frame> frames = (List<Frame>)session.getAttribute("frames");
+
+
+
+
+		saveresult.put("good",good);
+		saveresult.put("error",error);
+		return saveresult;
+	}
+
+	/**
+	 * 保存188协议的表到DB
+	 * @param session
+	 * @return
+     */
+	public HashMap<String,Integer> saveReadData188(IoSession session){
+		int good = 0;
+		int error = 0;
+		HashMap<String,Integer> saveresult = new HashMap<>();
+		List<Frame> frames = (List<Frame>)session.getAttribute("frames");
+		GPRS gprs = (GPRS)session.getAttribute("gprs");
+		int readlogid = (int)session.getAttribute("readlogid");
+
+		HashMap<String,MeterRead> meterreads = new HashMap<>();
+		ByteBuffer bf = ByteBuffer.allocate(4);
+		bf.order(ByteOrder.LITTLE_ENDIAN);
+
+		for (Frame frame : frames){
+			byte[] meterdata = frame.getData();
+			int metercnt = (meterdata.length-1-3-4)/14;
+			for (int i = 0;i < metercnt;i++){
+				String meteraddr = "";
+				int meterread = -1;
+				byte meterstatus = 1;
+				byte meterstatus_l = 0;
+				byte meterstatus_h = 0;
+				byte valvestatus = 1;
+				String remark = "";
+
+				meterstatus_l = meterdata[i*14+4+1+3+12];
+				meterstatus_h = meterdata[i*14+4+1+3+12+1];
+				valvestatus = meterdata[i*14+4+1+3+12];
+				remark = meterstatus_l+" " +meterstatus_h;
+
+				//meter status 表的状态
+				if(((meterstatus_l &0x40) ==0x40) || ((meterstatus_l &0x80)==0x80)){  //timeout
+					//0x40 ~ 表  0x80 ~ 采集器
+					meterstatus = 4;
+					error++;
+				}else{  // normal
+					good++;
+					if((meterstatus_h & 0x20) == 0x20){  //remark = "气泡";
+						meterstatus = 6;
+					}else{
+						if((meterstatus_h & 0x30) == 0x30){  //remark = "致命故障";
+							meterstatus = 7;
+						}else{
+							if((meterstatus_h & 0x80) == 0x80){  //remark = "强光";
+								meterstatus = 8;
+							}else{  //remark = "";
+								meterstatus = 1;
+							}
+						}
+					}
+				}
+
+				//valve status 阀门状态
+				switch (valvestatus & 0x03) {
+					case 0x00:  //开
+						valvestatus = 1;
+						break;
+					case 0x01:  //关
+						valvestatus = 0;
+						break;
+					case 0x02:  //关
+						valvestatus = 0;
+						break;
+					case 0x03:  //异常
+						valvestatus = 2;
+						break;
+				}
+
+				//表地址
+				for(int j = 0;j<7;j++){
+					meteraddr += String.format("%02x", meterdata[14*i +4+ 1+3+6-j]&0xFF);
+				}
+
+				//表读数
+				bf.put(meterdata, i*14+4+1+3+8, 4);
+				String readhexstr = Integer.toHexString(bf.getInt(0));  //get the int   turn the int to hex string
+				meterread = Integer.parseInt(readhexstr)/100;  //turn the readhexstr to the real read
+				bf.flip();
+				meterreads.put(meteraddr,new MeterRead(readlogid,gprs.getPid(),meteraddr,meterstatus,meterread,valvestatus,remark));
+			}
 		}
-		return "正常："+good+"; 异常："+error;
+
+		readService.saveMeterReads(meterreads);
+
+		saveresult.put("good",good);
+		saveresult.put("error",error);
+		return saveresult;
 	}
 
 	/**
@@ -294,8 +414,8 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		if(frame.getFn() == 0x01){
             //online 集中器在线  EGatom&188同步序列号 / 188v2发送抄表指令
             switch (gprs.getGprsprotocol()){
-                case 2:  //EGatom
-                case 3:  //188
+                case 2:  //188
+                case 3:  //EGatom
 					session.setAttribute("state","synack");
                     session.write(synFrame(gprs,seq));
                     break;

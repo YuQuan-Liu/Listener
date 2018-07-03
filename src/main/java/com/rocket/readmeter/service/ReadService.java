@@ -1,10 +1,7 @@
 package com.rocket.readmeter.service;
 
 import com.rocket.readmeter.Listener;
-import com.rocket.readmeter.dao.GPRSMapper;
-import com.rocket.readmeter.dao.MeterMapper;
-import com.rocket.readmeter.dao.ReadLogMapper;
-import com.rocket.readmeter.dao.ValveLogMapper;
+import com.rocket.readmeter.dao.*;
 import com.rocket.readmeter.obj.*;
 import com.rocket.utils.MybatisUtils;
 import com.rocket.utils.StringUtil;
@@ -382,6 +379,30 @@ public class ReadService {
 
         for(Readlog readlog : readlogs){
             readSingleNeighbor(readlog.getObjectId(), readlog.getPid());
+        }
+
+    }
+
+    /**
+     * 依次保存抄上来的水表的地址
+     * @param meterreads
+     */
+    public void saveMeterReads(HashMap<String, MeterRead> meterreads) {
+        //依次保存表的数据
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
+        try {
+            MeterMapper meterMapper = session.getMapper(MeterMapper.class);
+            ReadMeterLogMapper readMeterLogMapper = session.getMapper(ReadMeterLogMapper.class);
+
+            for(Map.Entry<String,MeterRead> entry : meterreads.entrySet()){
+                MeterRead meterread = entry.getValue();
+                meterMapper.updateMeter(meterread);
+                readMeterLogMapper.insertReadMeterLog(meterread);
+            }
+
+            session.commit();
+        } finally {
+            session.close();
         }
 
     }

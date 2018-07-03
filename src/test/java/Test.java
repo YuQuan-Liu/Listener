@@ -6,10 +6,13 @@ import com.rocket.readmeter.dao.MeterMapper;
 import com.rocket.readmeter.dao.ReadLogMapper;
 import com.rocket.readmeter.obj.Frame;
 import com.rocket.readmeter.obj.GPRS;
+import com.rocket.readmeter.obj.MeterRead;
+import com.rocket.readmeter.service.ReadService;
 import com.rocket.utils.MybatisUtils;
 import com.rocket.utils.StringUtil;
 import org.apache.ibatis.session.SqlSession;
 
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -76,5 +79,17 @@ public class Test {
                 Frame.AFN_LOGIN, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),
                 (byte)0x03, gprs_addr, new byte[0]);
         System.out.println(login);
+    }
+
+    @org.junit.Test
+    public void testReadService(){
+        ReadService readService = new ReadService();
+        HashMap<String,MeterRead> meterreads = new HashMap<>();
+
+        meterreads.put("00001510161009",new MeterRead(17828,661,"00001510161009",1,123,2,"Test"));
+        meterreads.put("00001605079446",new MeterRead(17828,661,"00001605079446",1,9999,2,"Test"));
+
+        readService.saveMeterReads(meterreads);
+
     }
 }
