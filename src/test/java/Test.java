@@ -4,10 +4,9 @@ import com.rocket.readmeter.ClientDataHandler;
 import com.rocket.readmeter.dao.GPRSMapper;
 import com.rocket.readmeter.dao.MeterMapper;
 import com.rocket.readmeter.dao.ReadLogMapper;
-import com.rocket.readmeter.obj.Frame;
-import com.rocket.readmeter.obj.GPRS;
-import com.rocket.readmeter.obj.MeterRead;
+import com.rocket.readmeter.obj.*;
 import com.rocket.readmeter.service.ReadService;
+import com.rocket.readmeter.service.ValveService;
 import com.rocket.utils.MybatisUtils;
 import com.rocket.utils.StringUtil;
 import org.apache.ibatis.session.SqlSession;
@@ -89,7 +88,19 @@ public class Test {
         meterreads.put("00001510161009",new MeterRead(17828,661,"00001510161009",1,123,2,"Test"));
         meterreads.put("00001605079446",new MeterRead(17828,661,"00001605079446",1,9999,2,"Test"));
 
-        readService.saveMeterReads(meterreads);
+        readService.saveMeterReads188(meterreads);
 
     }
+
+    @org.junit.Test
+    public void testValveConfLogMapper(){
+
+        ValveService valveService = new ValveService();
+        Valvelog valvelog = valveService.getValveLogByID(3536);
+        System.out.println(valvelog);
+
+        List<ValveConfLog> conflogs = valveService.getValveConfLog(3536);
+        System.out.println();
+    }
+
 }

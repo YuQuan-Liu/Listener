@@ -20,7 +20,7 @@ public class ServerDataHandler extends IoHandlerAdapter {
 	private static final Gson gson = new Gson();
 	private final ReadService readService = new ReadService();
 	private final ValveService valveService = new ValveService();
-	private final static ExecutorService threadpool = Executors.newFixedThreadPool(5);
+	private final static ExecutorService threadpool = Executors.newFixedThreadPool(7);
 
 	@Override
 	public void exceptionCaught(IoSession session,Throwable cause){
@@ -33,8 +33,8 @@ public class ServerDataHandler extends IoHandlerAdapter {
 		
 		if(session.getIdleCount(status) == 1){
 			String remote = session.getRemoteAddress().toString();
-			String readlogid = session.getAttribute("readlogid").toString();
-			logger.info("readlogid: "+ readlogid+";remote: "+remote+";idle!!!");
+			String action = (String) session.getAttribute("action");
+			logger.info("action: "+ action+";remote: "+remote+";idle!!!");
 			session.closeNow();
 		}
 		
@@ -47,29 +47,29 @@ public class ServerDataHandler extends IoHandlerAdapter {
 		try {
 			JsonObject jo = gson.fromJson(action,JsonObject.class);
 			String function = jo.getAsJsonPrimitive("function").getAsString();
-			int readlogid = jo.getAsJsonPrimitive("pid").getAsInt();
-			session.setAttribute("readlogid",readlogid);
-			if((function.equalsIgnoreCase("read") || function.equalsIgnoreCase("valve")) && readlogid > 0){
-				session.write("{\"function\":\""+function+"\",\"pid\":\""+readlogid+"\",\"result\":\"success\"}");
-
+			int pid = jo.getAsJsonPrimitive("pid").getAsInt();  //readlogid / valvelogid
+			if((function.equalsIgnoreCase("read") || function.equalsIgnoreCase("valve")) && pid > 0){
+				session.write("{\"function\":\""+function+"\",\"pid\":\""+pid+"\",\"result\":\"success\"}");
+				session.setAttribute("action",action);
 				//在线程池中执行抄表任务
 				threadpool.execute(new Runnable() {
 					@Override
 					public void run() {
-						logger.info("thread pool start runing readlogid: "+readlogid);
+						logger.info("thread pool start running action: "+action);
 						switch (function){
 							case "read":
-								readService.read(readlogid);
+								readService.read(pid);
 								break;
 							case "valve":
+								valveService.control(pid);
 								break;
 						}
-						logger.info("thread pool end runing readlogid: "+readlogid);
+						logger.info("thread pool end running action: "+action);
 					}
 				});
 
 			}else{
-				session.write("{\"function\":\""+function+"\",\"pid\":\""+readlogid+"\",\"result\":\"fail\"}");
+				session.write("{\"function\":\""+function+"\",\"pid\":\""+pid+"\",\"result\":\"fail\"}");
 			}
 		} catch (Exception e) {
 			logger.error("message receive error : " + action,e);
@@ -78,13 +78,14 @@ public class ServerDataHandler extends IoHandlerAdapter {
 	
 	@Override
 	public void sessionOpened(IoSession session) throws Exception{
+		session.setAttribute("action","");  //防止获取action的时候null异常
 		logger.info(session.getRemoteAddress().toString());
 	}
 	
 	@Override
 	public void sessionClosed(IoSession session) throws Exception{
 		String remote = session.getRemoteAddress().toString();
-		String readlogid = session.getAttribute("readlogid").toString();
-		logger.info("readlogid: "+ readlogid+";remote: "+remote+";closed!!!");
+		String action = (String) session.getAttribute("action");
+		logger.info("action: "+ action+";remote: "+remote+";closed!!!");
 	}
 }

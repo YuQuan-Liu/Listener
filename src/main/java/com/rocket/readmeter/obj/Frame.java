@@ -212,6 +212,20 @@ public class Frame {
 		return frame_str.toString();
 	}
 
+	/**
+	 * 登陆监听服务器帧
+	 * @param gprsaddr
+	 * @return
+	 */
+	public static Frame loginFrame(String gprsaddr){
+		byte[] gprs_addr = StringUtil.string2Byte(gprsaddr);
+		Frame login = new Frame(0, (byte)(Frame.ZERO | Frame.PRM_MASTER |Frame.PRM_M_LINE),
+				Frame.AFN_LOGIN, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),
+				(byte)0x01, gprs_addr, new byte[0]);
+		return login;
+	}
+
+
 	public static void main(String[] args) {
 		byte[] addr = new byte[5];
 		for(int i=0;i < 5;i++){

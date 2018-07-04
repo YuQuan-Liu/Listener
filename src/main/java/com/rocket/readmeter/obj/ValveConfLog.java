@@ -6,6 +6,7 @@ public class ValveConfLog {
 	private int meterid;
 	private int switchaction;
 	private int result;
+	private String errorreason;
 	private int valvelogid;
 	private String meteraddr;
 	private int gprsid;
@@ -13,6 +14,7 @@ public class ValveConfLog {
 	private int port;
 	private int gprsprotocol;
 	private String gprsaddr;
+
 	public int getPid() {
 		return pid;
 	}
@@ -36,6 +38,12 @@ public class ValveConfLog {
 	}
 	public void setResult(int result) {
 		this.result = result;
+	}
+	public String getErrorreason() {
+		return errorreason;
+	}
+	public void setErrorreason(String errorreason) {
+		this.errorreason = errorreason;
 	}
 	public int getValvelogid() {
 		return valvelogid;

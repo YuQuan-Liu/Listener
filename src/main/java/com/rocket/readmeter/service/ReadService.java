@@ -243,7 +243,7 @@ public class ReadService {
                 //剩下的就去clientDataHandler中处理了！
 
                 client.setAttribute("state","loginack");
-                client.write(loginFrame(gprs));
+                client.write(Frame.loginFrame(gprs.getGprsaddr()));
 
             }else{
                 //建立连接失败！ save to db
@@ -256,20 +256,6 @@ public class ReadService {
         }
 
     }
-
-    /**
-     * 登陆监听服务器帧
-     * @param gprs
-     * @return
-     */
-    public Frame loginFrame(GPRS gprs){
-        byte[] gprs_addr = StringUtil.string2Byte(gprs.getGprsaddr());
-        Frame login = new Frame(0, (byte)(Frame.ZERO | Frame.PRM_MASTER |Frame.PRM_M_LINE),
-                Frame.AFN_LOGIN, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),
-                (byte)0x01, gprs_addr, new byte[0]);
-        return login;
-    }
-
 
     /**
      * 抄单个小区
@@ -340,7 +326,7 @@ public class ReadService {
                 //剩下的就去clientDataHandler中处理了！
 
                 client.setAttribute("state","loginack");
-                client.write(loginFrame(gprs));
+                client.write(Frame.loginFrame(gprs.getGprsaddr()));
             }else{
                 //建立连接失败！ save gprs result
                 error = true;

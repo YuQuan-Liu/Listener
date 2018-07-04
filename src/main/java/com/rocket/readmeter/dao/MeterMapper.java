@@ -38,6 +38,11 @@ public interface MeterMapper {
             "where gprsid = #{gprsid} and MeterAddr = #{meteraddr} and valid = '1' ")
     public void updateMeterNoRead(MeterRead meterRead);
 
+    @Select("update Meter " +
+            "set valvestate = #{valvestatus} " +
+            "where pid = #{mid} ")
+    public void updateMeterValve(int mid, int valvestatus);
+
 
     @Select("update Meter " +
             "set meterstate = #{meterstatus},readdata = #{meterread},valvestate = #{valvestatus},readtime = now() " +

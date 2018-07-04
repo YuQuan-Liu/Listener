@@ -14,7 +14,7 @@ public interface ValveLogMapper {
 
     @Select("update valvelog " +
             "set completecount = #{normal},errorcount=#{error},status = 100 " +
-            "where pid = #{pid}")
-    public void updateValveLog(Valvelog valvelog, int normal, int error);
+            "where pid = #{valvelogid}")
+    public void updateValveLog(int valvelogid, int normal, int error);
     
 }
