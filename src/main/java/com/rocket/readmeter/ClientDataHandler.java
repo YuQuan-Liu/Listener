@@ -236,12 +236,94 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		return "正常："+saveresult.get("good")+"; 异常："+saveresult.get("error");
 	}
 
+	public HashMap<String,Integer> saveReadDataEG(IoSession session){
+		HashMap<String,Integer> saveresult = null;
+		String read_type = (String) session.getAttribute("read_type");
+		switch (read_type){
+			case "single":
+				saveresult = saveReadDataEGSingle(session);
+				break;
+			case "all":
+				saveresult = saveReadDataEGAll(session);
+				break;
+		}
+
+		return saveresult;
+	}
+
 	/**
-	 * 保存EG协议的表到DB
+	 * 保存EG协议的表到DB  抄单个表
+	 * @param session
+	 * @return
+	 */
+	public HashMap<String,Integer> saveReadDataEGSingle(IoSession session){
+		int good = 0;
+		int error = 0;
+		HashMap<String,Integer> saveresult = new HashMap<>();
+		List<Frame> frames = (List<Frame>)session.getAttribute("frames");
+		GPRS gprs = (GPRS)session.getAttribute("gprs");
+		int readlogid = (int)session.getAttribute("readlogid");
+		Meter meter = (Meter) session.getAttribute("meter");
+
+		HashMap<String,MeterRead> meterreads = new HashMap<>();
+
+		for(Frame frame : frames){
+			byte[] frame_bytes = frame.getFrame();
+
+			if(frame_bytes[18] == (byte) Integer.parseInt(meter.getMeterAddr())){
+				int meterread = -1;
+				int meteraddr = 1;
+				byte meterstatus = 1;
+				String remark = "";
+
+				meteraddr = frame_bytes[18]&0xFF;
+				meterread = frame_bytes[18+1]&0xFF;
+				meterread = meterread << 8;
+				meterread = meterread|(frame_bytes[18+2]&0xFF);
+				String numstr = Integer.toHexString(meterread);
+
+				if(numstr.equals("aaaa")){
+					meterread = -1;
+					meterstatus = 2;
+					remark = "aaaa";
+					error++;
+				}else{
+					if(numstr.equals("bbbb")){
+						meterread = -1;
+						meterstatus = 3;
+						remark = "bbbb";
+						error++;
+					}else{
+						meterstatus = 1;
+						remark = "";
+						try {
+							meterread = Integer.valueOf(numstr);
+							good++;
+						} catch (NumberFormatException e) {
+							error++;
+							meterread = -1;
+							remark = e.getMessage();
+							logger.error("numstr to meterread error ! meterread: "+numstr,e);
+						}
+					}
+				}
+				meterreads.put(meteraddr+"",new MeterRead(readlogid,gprs.getPid(),meter.getCollectorAddr(),meteraddr+"",meterstatus,meterread,1,remark));
+			}
+		}
+
+		readService.saveMeterReadsEG(meterreads);
+
+		saveresult.put("good",good);
+		saveresult.put("error",error);
+		return saveresult;
+	}
+
+	/**
+	 * 保存EG协议的表到DB  抄采集器
 	 * @param session
 	 * @return
      */
-	public HashMap<String,Integer> saveReadDataEG(IoSession session){
+	public HashMap<String,Integer> saveReadDataEGAll(IoSession session){
 		int good = 0;
 		int error = 0;
 		HashMap<String,Integer> saveresult = new HashMap<>();
@@ -645,11 +727,10 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		String read_type = (String)session.getAttribute("read_type");
 
 		byte[] gprs_addr = StringUtil.string2Byte(gprs.getGprsaddr());
-		byte[] framedata = null;
+		byte[] framedata = new byte[4];
 
 		switch (read_type){
 			case "single":
-				framedata = new byte[4];
 				framedata[0] = (byte) 0xAA;
 				framedata[1] = (byte) (Integer.parseInt(meter.getCollectorAddr()) / 256);
 				framedata[2] = (byte) Integer.parseInt(meter.getCollectorAddr());
@@ -672,21 +753,6 @@ public class ClientDataHandler extends IoHandlerAdapter {
 				Frame.AFN_READMETER, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR|seq),
 				(byte)0x04, gprs_addr, framedata);
 		return read;
-	}
-
-	/**
-	 *
-	 * @param read_type
-	 * @param gprs
-	 * @param meter
-	 * @param seq
-     * @return
-     */
-	private Frame controlFrame188(String read_type, GPRS gprs, Meter meter, byte seq, byte action) {
-		byte[] gprs_addr = StringUtil.string2Byte(gprs.getGprsaddr());
-
-		//TODO...
-		return null;
 	}
 
 }

@@ -236,7 +236,15 @@ public class ReadService {
                 client.setAttribute("action","read");  //抄表read  开关阀valve
                 client.setAttribute("frames",new ArrayList<Frame>());  //保存所有的抄表数据帧
                 //抄海大表
-                client.setAttribute("collectors",new ArrayList<Collector>());  //海大表时  所有采集器
+                List<Collector> collectors = new ArrayList<>();
+                Collector collector = new Collector();
+                collector.setColAddr(Integer.parseInt(meter.getCollectorAddr()));
+                collector.setMeterNums(1);
+                collectors.add(collector);
+                client.setAttribute("collectors",collectors);  //海大表时  所有采集器
+                client.setAttribute("collectors_finish",new HashMap<String,String>());  //存储每个采集器的抄表结果
+                client.setAttribute("collector_index",0);  //需要抄的采集器在collectors中的index
+
                 //抄小区时
                 client.setAttribute("gprs_cnt",1);  //当前所抄小区 GPRS个数
                 client.setAttribute("gprs_finish",new ConcurrentHashMap<String,String>());  //当前所抄小区 已完成的GPRS及结果
