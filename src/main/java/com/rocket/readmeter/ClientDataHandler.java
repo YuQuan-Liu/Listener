@@ -136,12 +136,17 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		//在session 关闭的时候 处理：readService.updateReadLog 这次抄表结束
 		ConcurrentHashMap<String,String> gprs_finish = (ConcurrentHashMap<String, String>) session.getAttribute("gprs_finish");
 		int readlogid = (int)session.getAttribute("readlogid");
-		//将结果拼装到一起
-		String result = "";
-		for(Map.Entry<String,String> entry : gprs_finish.entrySet()){
-			result = result +"<br/>"+ entry.getKey()+":"+entry.getValue();
+
+		int gprs_cnt = (int)session.getAttribute("gprs_cnt");
+		int gprs_finish_cnt = gprs_finish.size();
+		if(gprs_cnt == gprs_finish_cnt){
+			//将结果拼装到一起
+			String result = "";
+			for(Map.Entry<String,String> entry : gprs_finish.entrySet()){
+				result = result +"<br/>"+ entry.getKey()+":"+entry.getValue();
+			}
+			readService.updateReadLog(readlogid,true,result,result);
 		}
-		readService.updateReadLog(readlogid,true,result,result);
 
 	}
 
