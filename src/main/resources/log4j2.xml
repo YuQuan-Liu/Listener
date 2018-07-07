@@ -49,7 +49,7 @@
   <Loggers>
     <Root level="info">
       <AppenderRef ref="rollFileError" level="error"/>
-      <AppenderRef ref="rollFileDefault" level="warn"/>
+      <AppenderRef ref="rollFileDefault"/>
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
