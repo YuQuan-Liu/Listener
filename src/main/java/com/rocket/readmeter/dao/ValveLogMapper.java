@@ -1,6 +1,7 @@
 package com.rocket.readmeter.dao;
 
 import com.rocket.readmeter.obj.Valvelog;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 /**
@@ -15,6 +16,6 @@ public interface ValveLogMapper {
     @Select("update valvelog " +
             "set completecount = #{normal},errorcount=#{error},status = 100 " +
             "where pid = #{valvelogid}")
-    public void updateValveLog(int valvelogid, int normal, int error);
+    public void updateValveLog(@Param("valvelogid") int valvelogid, @Param("normal") int normal, @Param("error") int error);
     
 }

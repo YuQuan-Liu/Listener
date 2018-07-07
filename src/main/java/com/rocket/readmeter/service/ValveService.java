@@ -217,6 +217,7 @@ public class ValveService {
                                 if(slave_seq != slave_seq_){
                                     slave_seq = slave_seq_;
                                     Frame readdata = new Frame(Arrays.copyOf(deal, middle));
+                                    logger.info("valve service control receive ! frame : "+readdata.toString());
                                     if(readdata.getFn() == 0x01){  //集中器收到发出去的指令
                                         finished = true;
                                     }
@@ -288,7 +289,7 @@ public class ValveService {
         Frame login = new Frame(0, (byte)(Frame.ZERO | Frame.PRM_MASTER |Frame.PRM_M_LINE),
                 Frame.AFN_LOGIN, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),
                 (byte)0x01, gprsaddr_bytes, new byte[0]);
-
+        logger.info("valve service login listener ! frame : "+login.toString());
         try {
             out.write(login.getFrame());
             s.setSoTimeout(6000);  //6s内接收服务器的返回
@@ -298,6 +299,7 @@ public class ValveService {
 
             if(Frame.checkFrame(Arrays.copyOf(data, 17))){  //6s内收到监听返回  判断是否是ack
                 Frame login_result = new Frame(Arrays.copyOf(data, 17));
+                logger.info("valve service login listener ack ! frame : "+login_result.toString());
                 if(login_result.getFn() == 0x01){   //online  集中器在线
                     good = true;
                 }
@@ -331,6 +333,7 @@ public class ValveService {
             Frame syn = new Frame(0, (byte)(Frame.ZERO | Frame.PRM_MASTER |Frame.PRM_M_SECOND),
                     Frame.AFN_READMETER, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR | seq),
                     (byte)0x05, gprsaddr_bytes, framedata);
+            logger.info("valve service syn seq ! frame : "+syn.toString());
             try {
                 out.write(syn.getFrame());
                 s.setSoTimeout(10000);  //10s内接收服务器的返回
@@ -340,6 +343,7 @@ public class ValveService {
 
                 if(Frame.checkFrame(Arrays.copyOf(data, 17))){  //10s内收到监听返回  判断是否是ack
                     Frame ack = new Frame(Arrays.copyOf(data, 17));
+                    logger.info("valve service syn seq ack ! frame : "+ack.toString());
                     if(ack.getFn() == 0x01){  //序列号同步
                         seq_syn = true;
                     }
@@ -384,7 +388,7 @@ public class ValveService {
             Frame controlFrame = new Frame(framedata.length, (byte)(Frame.ZERO | Frame.PRM_MASTER |Frame.PRM_M_FIRST),
                     Frame.AFN_CONTROL, (byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR|seq),
                     action, gprsaddr_bytes, framedata);
-
+            logger.info("valve service control ! frame : "+controlFrame.toString());
             out.write(controlFrame.getFrame());
             s.setSoTimeout(10000);
             while((in.read(data, 0, 100)) > 0){
@@ -393,6 +397,7 @@ public class ValveService {
 
             if(Frame.checkFrame(Arrays.copyOf(data, 17))){  //判断接收到的集中器的回应
                 Frame ack_result = new Frame(Arrays.copyOf(data, 17));
+                logger.info("valve service control ack ! frame : "+ack_result.toString());
                 if(ack_result.getFn() == 0x01){  //集中器收到发出去的指令
                     ack = true;
                 }

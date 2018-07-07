@@ -41,7 +41,7 @@ public interface MeterMapper {
     @Select("update Meter " +
             "set valvestate = #{valvestatus} " +
             "where pid = #{mid} ")
-    public void updateMeterValve(int mid, int valvestatus);
+    public void updateMeterValve(@Param("mid")int mid, @Param("valvestatus") int valvestatus);
 
 
     @Select("update Meter " +
