@@ -11,14 +11,14 @@ import org.apache.ibatis.session.SqlSession;
 public class ListenerLogService {
 
     public void insertListenerLog(ListenerLog listenerLog){
-        SqlSession session = MybatisUtils.getSqlSessionFactoryListener().openSession();
-        try {
-            ListenerLogMapper listenerLogMapper = session.getMapper(ListenerLogMapper.class);
-            listenerLogMapper.insertLog(listenerLog);
-            session.commit();
-        } finally {
-            session.close();
-        }
+//        SqlSession session = MybatisUtils.getSqlSessionFactoryListener().openSession();
+//        try {
+//            ListenerLogMapper listenerLogMapper = session.getMapper(ListenerLogMapper.class);
+//            listenerLogMapper.insertLog(listenerLog);
+//            session.commit();
+//        } finally {
+//            session.close();
+//        }
     }
     
 }

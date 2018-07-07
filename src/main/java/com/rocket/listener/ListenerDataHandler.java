@@ -5,12 +5,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.rocket.listener.obj.ListenerLog;
 import com.rocket.listener.service.ListenerLogService;
 import com.rocket.readmeter.obj.Frame;
+import com.rocket.utils.RedisUtil;
 import com.rocket.utils.StringUtil;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
 
 
 public class ListenerDataHandler extends IoHandlerAdapter {
@@ -19,6 +21,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
     private static final ConcurrentHashMap<String, IoSession> gprs = new ConcurrentHashMap<>(2048);
     private static final ConcurrentHashMap<String, IoSession> pc = new ConcurrentHashMap<>();
     private final ListenerLogService listenerLogService = new ListenerLogService();
+    private final Jedis jedis = RedisUtil.getJedisConnection();
 
     @Override
     public void exceptionCaught(IoSession session,Throwable cause){
@@ -99,6 +102,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
                         }else{  //确认
                             if(gprs.containsKey(frame.getAddrstr()) && (boolean)gprs.get(frame.getAddrstr()).getAttribute("online")){  //集中器在线
                                 pc.put(frame.getAddrstr(), session);
+                                jedis.setex("p_"+frame.getAddrstr(),180,session.getRemoteAddress().toString());
                                 session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x01,gprs_addr,new byte[0]));
                                 listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "1", "3", "GPRS",session.getRemoteAddress().toString()));
                             }else{  //GPRS不在线
@@ -146,6 +150,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
                 switch(frame.getFn()){
                     case 0x01:  //登录  集中器没有实现
                         gprs.put(frame.getAddrstr(), session);
+                        jedis.setex("g_"+frame.getAddrstr(),180,session.getRemoteAddress().toString());
                         //确认
                         session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR),(byte)0x01,gprs_addr,new byte[0]));
                         listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "0", "1", "",session.getRemoteAddress().toString()));
@@ -155,6 +160,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
                         break;
                     case 0x03:  //心跳
                         gprs.put(frame.getAddrstr(), session);
+                        jedis.setex("g_"+frame.getAddrstr(),180,session.getRemoteAddress().toString());
                         session.write(new Frame(0,(byte)(Frame.ZERO|Frame.PRM_S_LINE),Frame.AFN_YES,(byte)(Frame.ZERO|Frame.SEQ_FIN|Frame.SEQ_FIR | (frame.getSeq()&0x0F)),(byte)0x01,gprs_addr,new byte[0]));
                         listenerLogService.insertListenerLog(new ListenerLog(frame.getAddrstr(), "0", "4", "",session.getRemoteAddress().toString()));
                         break;
