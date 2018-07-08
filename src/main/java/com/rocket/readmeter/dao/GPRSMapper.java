@@ -18,4 +18,8 @@ public interface GPRSMapper {
             "where PID = (select gprsid from Meter where PID = #{mid})")
     public GPRS getGPRSbyMID(int mid);
 
+    @Select("select pid,neighborid,gprsaddr,gprsprotocol,ip,port from gprs " +
+            "where PID = #{gid} ")
+    public GPRS getGPRSbyID(int gid);
+
 }

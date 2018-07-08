@@ -65,6 +65,24 @@ public class ReadService {
     }
 
     /**
+     * 根据ID 获取所在的GPRS
+     * @param gid
+     * @return
+     */
+    public GPRS getGPRSbyID(int gid){
+        SqlSession session = MybatisUtils.getSqlSessionFactoryRemote().openSession();
+
+        GPRS gprs = null;
+        try{
+            GPRSMapper gprsMapper = session.getMapper(GPRSMapper.class);
+            gprs = gprsMapper.getGPRSbyID(gid);
+        }finally {
+            session.close();
+        }
+        return gprs;
+    }
+
+    /**
      * 根据小区ID  获取小区下所有的GPRS
      * @param nid
      * @return
@@ -179,6 +197,10 @@ public class ReadService {
                 int mid = readlog.getObjectId();
                 readSingleMeter(mid, readlogid);
                 break;
+            case 4:
+                int gid = readlog.getObjectId();
+                GPRS gprs = getGPRSbyID(gid);
+                readSingleGPRS(gprs,1,new ConcurrentHashMap<String,String>(),readlogid);
             default:
                 break;
         }
