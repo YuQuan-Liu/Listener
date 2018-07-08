@@ -45,7 +45,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		String read_type = (String) session.getAttribute("read_type");
 		int data_timeout_cnt = 0;
 		//如果是单个表  超时时间是20s[eg & 188 & 188v2]
-		//如果是全部表  超时时间 120s[eg]  30s[188 & 188v2][每9s有Fake帧]
+		//如果是全部表  超时时间 120s[eg]  120s[188 & 188v2][每9s有Fake帧]
 		switch (read_type){
 			case "single":
 				data_timeout_cnt = 2;
@@ -57,7 +57,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 						break;
 					case GPRS.GPRSPROTOCOL_188:  //188
 					case GPRS.GPRSPROTOCOL_188V2:  //188v2
-						data_timeout_cnt = 3;
+						data_timeout_cnt = 12;
 						break;
 				}
 				break;
