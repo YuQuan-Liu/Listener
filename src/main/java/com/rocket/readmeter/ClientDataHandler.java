@@ -262,8 +262,6 @@ public class ClientDataHandler extends IoHandlerAdapter {
 	 * @return
 	 */
 	public HashMap<String,Integer> saveReadDataEGSingle(IoSession session){
-		int good = 0;
-		int error = 0;
 		HashMap<String,Integer> saveresult = new HashMap<>();
 		List<Frame> frames = (List<Frame>)session.getAttribute("frames");
 		GPRS gprs = (GPRS)session.getAttribute("gprs");
@@ -271,6 +269,8 @@ public class ClientDataHandler extends IoHandlerAdapter {
 		Meter meter = (Meter) session.getAttribute("meter");
 
 		HashMap<String,MeterRead> meterreads = new HashMap<>();
+		HashMap<String,String> goodmeters = new HashMap<>();
+		HashMap<String,String> errormeters = new HashMap<>();
 
 		for(Frame frame : frames){
 			byte[] frame_bytes = frame.getFrame();
@@ -291,21 +291,21 @@ public class ClientDataHandler extends IoHandlerAdapter {
 					meterread = -1;
 					meterstatus = 2;
 					remark = "aaaa";
-					error++;
+					errormeters.put(meteraddr+"","");
 				}else{
 					if(numstr.equals("bbbb")){
 						meterread = -1;
 						meterstatus = 3;
 						remark = "bbbb";
-						error++;
+						errormeters.put(meteraddr+"","");
 					}else{
 						meterstatus = 1;
 						remark = "";
 						try {
 							meterread = Integer.valueOf(numstr);
-							good++;
+							goodmeters.put(meteraddr+"","");
 						} catch (NumberFormatException e) {
-							error++;
+							errormeters.put(meteraddr+"","");
 							meterread = -1;
 							remark = e.getMessage();
 							logger.error("numstr to meterread error ! meterread: "+numstr,e);
@@ -318,8 +318,8 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 		readService.saveMeterReadsEG(meterreads);
 
-		saveresult.put("good",good);
-		saveresult.put("error",error);
+		saveresult.put("good",goodmeters.size());
+		saveresult.put("error",errormeters.size());
 		return saveresult;
 	}
 
@@ -329,8 +329,6 @@ public class ClientDataHandler extends IoHandlerAdapter {
 	 * @return
      */
 	public HashMap<String,Integer> saveReadDataEGAll(IoSession session){
-		int good = 0;
-		int error = 0;
 		HashMap<String,Integer> saveresult = new HashMap<>();
 		List<Frame> frames = (List<Frame>)session.getAttribute("frames");
 		GPRS gprs = (GPRS)session.getAttribute("gprs");
@@ -340,6 +338,8 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 		Collector collector = collectors.get(collector_index);
 		HashMap<String,MeterRead> meterreads = new HashMap<>();
+		HashMap<String,String> goodmeters = new HashMap<>();
+		HashMap<String,String> errormeters = new HashMap<>();
 
 		for(Frame frame : frames){
 			byte[] frame_bytes = frame.getFrame();
@@ -351,7 +351,9 @@ public class ClientDataHandler extends IoHandlerAdapter {
 			String remark = "";
 
 			if(frame_bytes[17] == (byte)0xFF){  //采集器超时~~~~返回指令0xFF
-				error = collector.getMeterNums();
+				for(int i = 1;i <= collector.getMeterNums();i++){
+					errormeters.put(i+"","");
+				}
 				break;
 			}else{
 				for(int i = 0;i < metercnt;i++){
@@ -365,21 +367,21 @@ public class ClientDataHandler extends IoHandlerAdapter {
 						meterread = -1;
 						meterstatus = 2;
 						remark = "aaaa";
-						error++;
+						errormeters.put(meteraddr+"","");
 					}else{
 						if(numstr.equals("bbbb")){
 							meterread = -1;
 							meterstatus = 3;
 							remark = "bbbb";
-							error++;
+							errormeters.put(meteraddr+"","");
 						}else{
 							meterstatus = 1;
 							remark = "";
 							try {
 								meterread = Integer.valueOf(numstr);
-								good++;
+								goodmeters.put(meteraddr+"","");
 							} catch (NumberFormatException e) {
-								error++;
+								errormeters.put(meteraddr+"","");
 								meterread = -1;
 								remark = e.getMessage();
 								logger.error("numstr to meterread error ! meterread: "+numstr,e);
@@ -394,8 +396,8 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 		readService.saveMeterReadsEG(meterreads);
 
-		saveresult.put("good",good);
-		saveresult.put("error",error);
+		saveresult.put("good",goodmeters.size());
+		saveresult.put("error",errormeters.size());
 		return saveresult;
 	}
 
@@ -405,13 +407,13 @@ public class ClientDataHandler extends IoHandlerAdapter {
 	 * @return
      */
 	public HashMap<String,Integer> saveReadData188(IoSession session){
-		int good = 0;
-		int error = 0;
 		HashMap<String,Integer> saveresult = new HashMap<>();
 		List<Frame> frames = (List<Frame>)session.getAttribute("frames");
 		GPRS gprs = (GPRS)session.getAttribute("gprs");
 		int readlogid = (int)session.getAttribute("readlogid");
 
+		HashMap<String,String> goodmeters = new HashMap<>();
+		HashMap<String,String> errormeters = new HashMap<>();
 		HashMap<String,MeterRead> meterreads = new HashMap<>();
 		ByteBuffer bf = ByteBuffer.allocate(4);
 		bf.order(ByteOrder.LITTLE_ENDIAN);
@@ -433,13 +435,18 @@ public class ClientDataHandler extends IoHandlerAdapter {
 				valvestatus = meterdata[i*14+4+1+3+12];
 				remark = meterstatus_l+" " +meterstatus_h;
 
+				//表地址
+				for(int j = 0;j<7;j++){
+					meteraddr += String.format("%02x", meterdata[14*i +4+ 1+3+6-j]&0xFF);
+				}
+
 				//meter status 表的状态
 				if(((meterstatus_l &0x40) ==0x40) || ((meterstatus_l &0x80)==0x80)){  //timeout
 					//0x40 ~ 表  0x80 ~ 采集器
 					meterstatus = 4;
-					error++;
+					errormeters.put(meteraddr,"");
 				}else{  // normal
-					good++;
+					goodmeters.put(meteraddr,"");
 					if((meterstatus_h & 0x20) == 0x20){  //remark = "气泡";
 						meterstatus = 6;
 					}else{
@@ -471,10 +478,6 @@ public class ClientDataHandler extends IoHandlerAdapter {
 						break;
 				}
 
-				//表地址
-				for(int j = 0;j<7;j++){
-					meteraddr += String.format("%02x", meterdata[14*i +4+ 1+3+6-j]&0xFF);
-				}
 
 				//表读数
 				bf.put(meterdata, i*14+4+1+3+8, 4);
@@ -492,8 +495,8 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 		readService.saveMeterReads188(meterreads);
 
-		saveresult.put("good",good);
-		saveresult.put("error",error);
+		saveresult.put("good",goodmeters.size());
+		saveresult.put("error",errormeters.size());
 		return saveresult;
 	}
 
