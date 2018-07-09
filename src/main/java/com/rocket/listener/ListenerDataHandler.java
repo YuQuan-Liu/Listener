@@ -64,7 +64,7 @@ public class ListenerDataHandler extends IoHandlerAdapter {
         Frame frame = (Frame) message;
         String addr = frame.getAddrstr();
         byte from = frame.getDir();
-        logger.info("from: " + from +";addr : "+ addr + ";frame : "+frame);
+        logger.info("from: " + from +";remote : "+session.getRemoteAddress().toString()+";addr : "+ addr + ";frame : "+frame);
         if(session.getAttribute("online") == null){
             session.setAttribute("from", from);
             session.setAttribute("addr", addr);

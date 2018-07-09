@@ -521,8 +521,10 @@ public class ClientDataHandler extends IoHandlerAdapter {
         }else {
             //抄表指令失败  或者这个帧不是应答帧  集中器返回的指令有问题
 			//这个地方不去尝试了  直接失败  如果是超时了才去尝试
-			gprs_finish.put(gprs.getGprsaddr(),"抄表指令应答失败");
-			session.closeNow();
+//			gprs_finish.put(gprs.getGprsaddr(),"抄表指令应答失败");
+//			session.closeNow();
+			readdata(session,frame);
+			session.setAttribute("state","data");
         }
 	}
 
