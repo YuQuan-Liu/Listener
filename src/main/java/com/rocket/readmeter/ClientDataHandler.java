@@ -57,7 +57,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 						break;
 					case GPRS.GPRSPROTOCOL_188:  //188
 					case GPRS.GPRSPROTOCOL_188V2:  //188v2
-						data_timeout_cnt = 18;
+						data_timeout_cnt = 30;
 						break;
 				}
 				break;

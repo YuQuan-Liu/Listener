@@ -51,8 +51,8 @@ public class ServerDataHandler extends IoHandlerAdapter {
 			if((function.equalsIgnoreCase("read") || function.equalsIgnoreCase("valve")) && pid > 0){
 				session.write("{\"function\":\""+function+"\",\"pid\":\""+pid+"\",\"result\":\"success\"}");
 				session.setAttribute("action",action);
-				//在线程池中执行抄表任务
-				threadpool.execute(new Runnable() {
+				//在线程中执行抄表任务
+				new Thread(new Runnable() {
 					@Override
 					public void run() {
 						logger.info("thread pool start running action: "+action);
@@ -66,7 +66,7 @@ public class ServerDataHandler extends IoHandlerAdapter {
 						}
 						logger.info("thread pool end running action: "+action);
 					}
-				});
+				}).start();
 
 			}else{
 				session.write("{\"function\":\""+function+"\",\"pid\":\""+pid+"\",\"result\":\"fail\"}");
