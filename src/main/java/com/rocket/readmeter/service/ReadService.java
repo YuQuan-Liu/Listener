@@ -239,7 +239,7 @@ public class ReadService {
      * @param readlogid
      */
     private void readSingleMeter_(Meter meter, GPRS gprs, int readlogid){
-
+        logger.info("read single meter ! gprsaddr: "+gprs.getGprsaddr() + " ;readlogid: "+readlogid);
         try {
             ConnectFuture future = Listener.connector.connect(new InetSocketAddress(gprs.getIp(),gprs.getPort()));
             future.awaitUninterruptibly();
@@ -274,7 +274,7 @@ public class ReadService {
 
                 client.setAttribute("state","loginack");
                 client.write(Frame.loginFrame(gprs.getGprsaddr()));
-
+                logger.info("read single meter start ! gprsaddr: "+gprs.getGprsaddr() + " ;readlogid: "+readlogid);
             }else{
                 //建立连接失败！ save to db
                 updateReadLog(readlogid,true,"连接监听失败","连接监听失败");
@@ -303,6 +303,7 @@ public class ReadService {
         }else{
             ConcurrentHashMap<String,String> gprs_result = new ConcurrentHashMap<>();  //当前所抄小区 已完成的GPRS及结果
             for (GPRS gprs : gprsList) {
+                logger.info("read single neighbor gprs... ! gprsaddr: "+gprs.getGprsaddr() + " ;gprscnt: "+gprs_cnt +" ;readlogid: "+readlogid);
                 readSingleGPRS(gprs, gprs_cnt, gprs_result, readlogid);
             }
         }
@@ -317,6 +318,7 @@ public class ReadService {
      * @param readlogid
      */
     private void readSingleGPRS(GPRS gprs, int gprs_cnt, ConcurrentHashMap<String,String> gprs_result, int readlogid){
+        logger.info("read single gprs ! gprsaddr: "+gprs.getGprsaddr() + " ;gprscnt: "+gprs_cnt +" ;readlogid: "+readlogid);
         //抄海大表
         List<Collector> collectors = new ArrayList<>();
         if(gprs.getGprsprotocol() == GPRS.GPRSPROTOCOL_EGATOM){  //EG表  atom集中器
@@ -357,6 +359,7 @@ public class ReadService {
 
                 client.setAttribute("state","loginack");
                 client.write(Frame.loginFrame(gprs.getGprsaddr()));
+                logger.info("read single gprs start ! gprsaddr: "+gprs.getGprsaddr() + " ;gprscnt: "+gprs_cnt +" ;readlogid: "+readlogid);
             }else{
                 //建立连接失败！ save gprs result
                 error = true;
