@@ -343,8 +343,8 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 		for(Frame frame : frames){
 			byte[] frame_bytes = frame.getFrame();
-			int metercnt = (frame.getDataLength()-12)/3;
-
+			int metercnt = (frame.getDataLength()-3)/3;
+			logger.info("save EG all: "+frame.toString()+" ;metercnt: "+metercnt);
 			int meterread = -1;
 			int meteraddr = 1;
 			byte meterstatus = 1;
@@ -362,7 +362,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 					meterread = meterread << 8;
 					meterread = meterread|(frame_bytes[18+3*i+2]&0xFF);
 					String numstr = Integer.toHexString(meterread);
-
+					logger.info("save EG all: meteraddr"+meteraddr+" ;meterread: "+meterread);
 					if(numstr.equals("aaaa")){
 						meterread = -1;
 						meterstatus = 2;
