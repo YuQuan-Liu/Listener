@@ -57,7 +57,7 @@ public class ClientDataHandler extends IoHandlerAdapter {
 						break;
 					case GPRS.GPRSPROTOCOL_188:  //188
 					case GPRS.GPRSPROTOCOL_188V2:  //188v2
-						data_timeout_cnt = 30;
+						data_timeout_cnt = 24;
 						break;
 				}
 				break;
@@ -65,6 +65,8 @@ public class ClientDataHandler extends IoHandlerAdapter {
 
 		//判断当前状态
 		String state = (String)session.getAttribute("state");
+		logger.info("session idle ! gprsaddr: "+gprs.getGprsaddr()+";state: "+state+";data_time_cnt: "+data_timeout_cnt+
+				";idle_cnt: "+idle_cnt+"; syn_seq_retry: "+syn_seq_retry+" ; read_retry: "+read_retry+ "read_type: "+read_type);
 		switch (state){
 			case "loginack":  //等待loginack超时
 				gprs_finish.put(gprs.getGprsaddr(),"登陆监听超时");

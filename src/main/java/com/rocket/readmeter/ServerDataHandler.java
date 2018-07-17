@@ -68,6 +68,18 @@ public class ServerDataHandler extends IoHandlerAdapter {
 					}
 				});
 				logger.info("threadname: "+thread.getName()+";threadid: "+thread.getId());
+				thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+					@Override
+					public void uncaughtException(Thread t, Throwable e) {
+						logger.error("thead get uncaught exception !!! action: "+action,e);
+						if(function == "read"){
+							readService.updateReadLog(pid,true,"get uncaught exception please retry later","get uncaught exception please retry later");
+						}
+						if(function == "valve"){
+							valveService.updateValveLog(pid,0,0);
+						}
+					}
+				});
 				thread.start();
 
 			}else{
