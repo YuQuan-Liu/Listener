@@ -190,7 +190,7 @@ public class ReadService {
                 readSingleNeighbor(nid, readlogid);
                 break;
             case 2:  //抄管理员小的所有的小区
-                int adminid = readlog.getObjectId();
+                int adminid = readlog.getAdminid();
                 readNeighborsAdmin(adminid, readlogid);
                 break;
             case 3:  //抄单个表
